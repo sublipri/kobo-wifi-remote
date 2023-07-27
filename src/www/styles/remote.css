@@ -1,0 +1,27 @@
+/*
+ * SPDX-FileCopyrightText: 2023 sublipri <sublipri@proton.me>
+ * SPDX-License-Identifier: GPL-3.0-only
+ */
+
+.button-container {
+  display: flex;
+  flex-direction: row-reverse;
+  height: 100vh;
+  flex-wrap: wrap-reverse;
+  align-content: flex-start;
+  overflow: scroll;
+}
+.remote-button {
+  width: 33.333vw;
+  height: 33.333vw;
+  font-size: 24px;
+}
+@media (orientation: landscape) {
+  .button-container {
+    flex-direction: column;
+  }
+  .remote-button {
+    width: 33.333vh;
+    height: 33.333vh;
+  }
+}

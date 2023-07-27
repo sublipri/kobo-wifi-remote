@@ -1,0 +1,89 @@
+<!--
+SPDX-FileCopyrightText: 2023 sublipri <sublipri@proton.me>
+SPDX-License-Identifier: GPL-3.0-only
+-->
+<!doctype html>
+<html>
+  <head>
+    <title>Kobo Wi-Fi Remote</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8" />
+    <link href="/styles/main.css" rel="stylesheet" />
+  </head>
+  <body style="margin: 0; padding: 0">
+    <br />
+    <form
+      action="/cgi-bin/record-input.cgi"
+      method="GET"
+      accept-charset="utf-8"
+    >
+      <label for="display-name">Display Name:</label><br />
+      <input type="text" id="display-name" name="display-name" required /><br />
+      <label for="duration">Capture Duration (Seconds):</label><br />
+      <input
+        type="number"
+        id="duration"
+        name="duration"
+        value="5"
+        min="1"
+        required
+      /><br />
+      <label for="sort-value">(Optional) Sort Value:</label><br />
+      <input type="text" id="sort-value" name="sort-value" /><br />
+      <label for="path-segment">(Optional) URL Path Segment:</label><br />
+      <input type="text" id="path-segment" name="path-segment" /><br />
+      <label for="keyboard-shortcut">(Optional) Keyboard Shortcut:</label><br />
+      <input
+        type="text"
+        id="keyboard-shortcut"
+        name="keyboard-shortcut"
+      /><br />
+      <p>
+        <button id="create-action" class="records-input">Create Action</button>
+      </p>
+    </form>
+    <p>
+      The keyboard shortcut field requires an
+      <a
+        href="https://developer.mozilla.org/en-US/docs/web/api/ui_events/keyboard_event_code_values"
+        >event code value</a
+      >. If using a computer with JavaScript enabled, the input box will update
+      with the code value when you press a key. This value represents the
+      physical location on a keyboard, so for non-QWERTY layouts it might differ
+      from the character pressed.
+    </p>
+    <p>
+      <a href="/cgi-bin/manage-actions.cgi"
+        ><button type="button" id="manage-actions">Manage Actions</button></a
+      >
+    </p>
+    <p>
+      <a href="javascript:history.back()"
+        ><button type="button" id="go-back">Go Back</button></a
+      >
+    </p>
+  </body>
+  <script>
+    const shortcutInput = document.getElementById("keyboard-shortcut");
+    shortcutInput.addEventListener(
+      "keydown",
+      (event) => {
+        event.preventDefault();
+        shortcutInput.value = `${event.code}`;
+      },
+      true,
+    );
+  </script>
+  <script type="module">
+    import { setup, alertRecording } from "/js/alert-recording.js";
+    setup();
+    var button = document.getElementById("create-action");
+    button.onclick = function () {
+      var name = document.getElementById("display-name").value;
+      if (name) {
+        var timeleft = document.getElementById("duration").value;
+        alertRecording(timeleft, button.id);
+      }
+    };
+  </script>
+</html>

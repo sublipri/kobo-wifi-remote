@@ -1,0 +1,84 @@
+<!--
+SPDX-FileCopyrightText: 2023 sublipri <sublipri@proton.me>
+SPDX-License-Identifier: GPL-3.0-only
+-->
+<!doctype html>
+<html>
+  <head>
+    <title>Kobo Wi-Fi Remote</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+      charset="UTF-8"
+    />
+    <link href="/styles/main.css" rel="stylesheet" />
+    <style>
+      .button-container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+      .remote-button {
+        width: 100vw;
+        height: 50vh;
+      }
+
+      @media (orientation: landscape) {
+        .button-container {
+          flex-direction: row;
+        }
+        .remote-button {
+          width: 50vw;
+          height: 100vh;
+        }
+      }
+    </style>
+  </head>
+  <body style="margin: 0; padding: 0">
+    <div class="button-container">
+      <button
+        class="remote-button colored-button"
+        id="prev-page"
+        title="Previous Page (Shortcut: ArrowLeft or KeyA)"
+        style="background-color: #5783db"
+        onclick="fetch('/left/')"
+        type="button"
+      >
+        Prev
+      </button>
+      <button
+        class="remote-button colored-button"
+        id="next-page"
+        title="Next Page (Shortcut: ArrowRight or KeyD)"
+        style="background-color: #33b249"
+        onclick="fetch('/right/')"
+        type="button"
+      >
+        Next
+      </button>
+    </div>
+  </body>
+  <script>
+    next_btn = document.getElementById("next-page");
+    prev_btn = document.getElementById("prev-page");
+    window.addEventListener(
+      "keydown",
+      (event) => {
+        switch (event.code) {
+          case "Right":
+          case "ArrowRight":
+          case "KeyD":
+            next_btn.click();
+            break;
+          case "Left":
+          case "ArrowLeft":
+          case "KeyA":
+            prev_btn.click();
+            break;
+        }
+      },
+      true,
+    );
+  </script>
+  <script src="/js/colored-buttons.js"></script>
+</html>

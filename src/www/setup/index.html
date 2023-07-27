@@ -1,0 +1,80 @@
+<!--
+SPDX-FileCopyrightText: 2023 sublipri <sublipri@proton.me>
+SPDX-License-Identifier: GPL-3.0-only
+-->
+<!doctype html>
+<html>
+  <head>
+    <title>Kobo Wi-Fi Remote</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="/styles/main.css" rel="stylesheet" />
+  </head>
+  <body>
+    <p>
+      To ensure your touchscreen is recognized, press the following button then
+      tap your e-reader's screen within five seconds.
+    </p>
+    <p>
+      <a href="/cgi-bin/probe-inputs.cgi"
+        ><button type="button" id="probe-inputs" class="records-input">
+          Check Input Device
+        </button></a
+      >
+    </p>
+    <p>
+      To setup page turning, press each button below then perform the specified
+      input on your e-reader within five seconds
+    </p>
+    <p>
+      If you require support for both portrait and landscape, tap the screen in
+      an area that will trigger the correct page turn in both orientations (e.g.
+      near the top right and bottom left while in portrait).
+    </p>
+    <p>
+      Otherwise, using a swipe is recommended. A tap might occasionally trigger
+      a footnote or hyperlink, and on some older models it can be hard to record
+      a tap that will reliably turn pages.
+    </p>
+    <p>
+      <a
+        href="/cgi-bin/record-input.cgi?path-segment=right&display-name=Next&sort-value=%00&keyboard-shortcut=ArrowRight"
+        ><button type="button" class="records-input" id="record-next">
+          Next Page
+        </button></a
+      >
+    </p>
+    <p>
+      <a
+        href="/cgi-bin/record-input.cgi?path-segment=left&display-name=Prev&sort-value=%01&keyboard-shortcut=ArrowLeft"
+        ><button type="button" class="records-input" id="record-prev">
+          Previous Page
+        </button></a
+      >
+    </p>
+    <p>
+      Note: if your e-reader automatically rotates the screen orientation, when
+      it's upside down the page turns will be reversed
+    </p>
+    <p>
+      Kobo e-readers turn their Wi-Fi off after a short period to conserve
+      battery life. To prevent this, enable the developer setting 'Force Wi-Fi
+      On'.
+    </p>
+    <p>
+      <a href="/cgi-bin/developer-settings.cgi"
+        ><button type="button" id="developer-settings">
+          Developer Settings
+        </button></a
+      >
+    </p>
+    <p>
+      <a href="javascript:history.back()"
+        ><button type="button" id="go-back">Go Back</button></a
+      >
+    </p>
+  </body>
+  <script type="module">
+    import { setup } from "/js/alert-recording.js";
+    setup();
+  </script>
+</html>

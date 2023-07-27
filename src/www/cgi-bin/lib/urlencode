@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# https://gist.github.com/cideM/ab87ebcbe43ec1488be255c2bcacd945
+encoder() {
+	LANG=C
+
+	while IFS= read -r c; do
+		case "$c" in [a-zA-Z0-9._-])
+			printf '%s' "$c"
+			continue
+			;;
+		esac
+		printf '%s' "$c" | od -An -tx1 | tr ' ' % | tr -d '\n' | tr '[:lower:]' '[:upper:]'
+	done <<EOF
+$(fold -w1)
+EOF
+}
+printf '%s' "$*" | encoder

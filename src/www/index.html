@@ -1,0 +1,67 @@
+<!--
+SPDX-FileCopyrightText: 2023 sublipri <sublipri@proton.me>
+SPDX-License-Identifier: GPL-3.0-only
+-->
+<!doctype html>
+<html>
+  <head>
+    <title>Kobo Wi-Fi Remote</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="/styles/main.css" rel="stylesheet" />
+    <style>
+      .link-container {
+        display: flex;
+        flex-direction: column;
+      }
+      a {
+        text-decoration: none;
+      }
+      button {
+        width: 100vw;
+        height: 25vh;
+        line-height: 25vh;
+      }
+    </style>
+  </head>
+  <body style="margin: 0; padding: 0">
+    <div class="link-container">
+      <a id="setup" href="/setup/">
+        <button
+          style="background-color: #5783db"
+          type="button"
+          class="colored-button"
+        >
+          Initial Setup
+        </button>
+      </a>
+      <a id="page-turner" href="/page-turner/">
+        <button
+          style="background-color: #33b249"
+          type="button"
+          class="colored-button"
+        >
+          Page Turner
+        </button>
+      </a>
+      <a id="create-action" href="/create-action/">
+        <button
+          style="background-color: #5783db"
+          type="button"
+          class="colored-button"
+        >
+          Custom Actions
+        </button>
+      </a>
+      <a id="remote-control" href="/cgi-bin/remote-control.cgi">
+        <button
+          style="background-color: #33b249"
+          type="button"
+          class="colored-button"
+        >
+          Remote Control
+        </button>
+      </a>
+    </div>
+  </body>
+  <script src="/js/colored-buttons.js"></script>
+</html>
