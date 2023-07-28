@@ -76,7 +76,7 @@ fi
 if "$touchscreen_input_detected"; then
 	mv "$tmp_recording" "$action_file"
 	name="$(httpd -d "$display_name")"
-	message="Successfully recorded input for <strong>$name.</strong>"
+	message="Successfully recorded input for <strong>$name</strong>."
 	mkdir -p "$action_dir"
 	csv_line="$path_segment,$display_name,$sort_value,$keyboard_shortcut"
 	if grep -q -e "^$path_segment," <"$CSV_FILE"; then
