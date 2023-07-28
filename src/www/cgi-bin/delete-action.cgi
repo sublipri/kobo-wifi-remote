@@ -10,7 +10,7 @@ get_var() {
 path_segment=$(get_var "path-segment")
 if [ "$path_segment" = "" ]; then
 	message="No action selected."
-elif grep "^$path_segment" <"$CSV_FILE"; then
+elif grep -q "^$path_segment," <"$CSV_FILE"; then
 	name=$(httpd -d "$path_segment")
 	if [ -x "$EVENTS_DIR/$path_segment.evemu" ]; then
 		rm "$EVENTS_DIR/$path_segment.evemu"
@@ -19,7 +19,7 @@ elif grep "^$path_segment" <"$CSV_FILE"; then
 		rm "$EVENTS_DIR/$path_segment.dat"
 	fi
 	rmdir "$HTTP_DIR/$path_segment"
-	sed -i -e "/^$path_segment/d" "$CSV_FILE"
+	sed -i -e "/^$path_segment,/d" "$CSV_FILE"
 	message="$name deleted."
 else
 	message="$name does not exist."

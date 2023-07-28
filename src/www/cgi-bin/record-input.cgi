@@ -45,7 +45,7 @@ elif ! echo "$keyboard_shortcut" | grep -q -e '^[0-9a-zA-Z]*$'; then
 	message="Keyboard shortcut must only contain alphanumeric characters"
 elif grep -q -e "^$action_dir" <"$DIR_LIST"; then
 	message="<strong>$path_segment</strong> is a reserved URL path segment"
-elif [ -d "$action_dir" ] && ! grep -q -e "^$path_segment,$display_name" <"$CSV_FILE"; then
+elif [ -d "$action_dir" ] && ! grep -q -e "^$path_segment,$display_name," <"$CSV_FILE"; then
 	message="URL path segment <strong>$path_segment</strong> already in use"
 else
 	valid_query_string=true
