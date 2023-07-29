@@ -1,6 +1,6 @@
 # Kobo Wi-Fi Remote 0.1.0
 
-Kobo Wi-Fi Remote is a web-based remote control/page turner for Kobo e-readers. It uses the BusyBox HTTP server included with Kobo's stock firmware to serve a website that can record and playback touchscreen inputs via CGI shell scripts. There is no authentication or encryption, so you should not use it on public Wi-Fi networks.
+Kobo Wi-Fi Remote is a web-based remote control/page turner for Kobo e-readers. It uses the BusyBox HTTP server included with Kobo's stock firmware to serve a website that can record and playback touchscreen inputs via CGI shell scripts. It is **not** safe to use on public Wi-Fi networks.
 
 ## Features
 
@@ -13,7 +13,7 @@ Kobo Wi-Fi Remote is a web-based remote control/page turner for Kobo e-readers. 
 
 ## Installation
 
-1. Download the latest release and extract the .zip file.
+1. Download the [latest release](https://github.com/sublipri/kobo-wifi-remote/releases/latest) and extract the .zip file.
 1. Connect your e-reader to your computer with a USB cable and mount it as an external storage device.
 1. Make sure your computer is set to show hidden files.
 1. Copy the `KoboRoot.tgz` file to the hidden `.kobo` directory on your e-reader.
