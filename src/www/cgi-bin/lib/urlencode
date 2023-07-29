@@ -5,7 +5,7 @@ encoder() {
 	LANG=C
 
 	while IFS= read -r c; do
-		case "$c" in [a-zA-Z0-9._-])
+		case "$c" in [a-zA-Z0-9_-])
 			printf '%s' "$c"
 			continue
 			;;
