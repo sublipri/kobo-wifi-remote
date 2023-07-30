@@ -10,6 +10,9 @@ Kobo Wi-Fi Remote is a web-based remote control/page turner for Kobo e-readers. 
 - Custom actions (e.g. adjust the brightness).
 - Trigger actions with a GET request. By default it uses the same endpoints as [KoboPageTurner](https://github.com/tylpk1216/KoboPageTurner) for compatibility with existing apps and hardware.
 - A [NickelMenu](https://pgaskin.net/NickelMenu/) toggle for enabling and disabling the server.
+- Should work with third-party document readers such as [KOReader](https://koreader.rocks/).
+
+There are some screenshots in the thread on [MobileRead](https://www.mobileread.com/forums/showthread.php?t=355368).
 
 ## Installation
 
