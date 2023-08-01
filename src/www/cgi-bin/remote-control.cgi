@@ -12,6 +12,7 @@ COLOR1="#33b249"
 COLOR2="#5783db"
 
 html='Content-Type: text/html
+Cache-Control: no-cache
 
 <!doctype html>
 <html>
