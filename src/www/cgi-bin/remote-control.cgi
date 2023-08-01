@@ -2,6 +2,10 @@
 # SPDX-FileCopyrightText: 2023 sublipri <sublipri@proton.me>
 # SPDX-License-Identifier: GPL-3.0-only
 
+if [ ! -s "$CSV_FILE" ]; then
+	output-html "No actions were found. Have you performed the initial setup?"
+	exit
+fi
 # shellcheck source=../../config
 . "$CONFIG_FILE"
 COLOR1="#33b249"
