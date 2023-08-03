@@ -9,7 +9,7 @@
   height: 100vh;
   flex-wrap: wrap-reverse;
   align-content: flex-start;
-  overflow: scroll;
+  overflow: auto;
 }
 .remote-button {
   width: 33.333vw;
