@@ -24,7 +24,7 @@ if "$debug_enabled"; then
 	If this is not intentional, disable them now.
 	You might have done this without understanding the implications by following advice
 	online to access the Developer Settings by searching for 'devmodeon'.</p>
-	<a href=\"/cgi-bin/disable-debug.cgi\"><button>Disable Debug Services</button></a></div>"
+	<p><a href=\"/cgi-bin/disable-debug.cgi\"><button>Disable Debug Services</button></a>"
 fi
 
 output-html "$html"
