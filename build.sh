@@ -62,7 +62,7 @@ export FILE_LIST="$FILE_LIST"
 pid=""
 
 httpd_running() {
-	pid=\$(pgrep -f "/bin/busybox httpd.*\$HTTP_DIR")
+	pid=\$(pgrep -o -f "^/bin/busybox httpd.*\$HTTP_DIR")
 	if [ "\$pid" != "" ]; then
 		return 0
 	else
