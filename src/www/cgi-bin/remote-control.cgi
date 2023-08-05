@@ -2,9 +2,15 @@
 # SPDX-FileCopyrightText: 2023 sublipri <sublipri@proton.me>
 # SPDX-License-Identifier: GPL-3.0-only
 
+printenv | sort | logger -p 7 -t wifiremote-control
+ls -lA --group-directories-first "$HTTP_DIR" | logger -p 7 -t wifiremote-control
 if [ ! -s "$CSV_FILE" ]; then
+	logger -p 6 -t wifiremote-control "CSV file empty"
 	output-html "No actions were found. Have you performed the initial setup?"
 	exit
+else
+	logger -p 7 -t wifiremote-control "CSV Contents:"
+	logger -p 7 -t wifiremote-control <"$CSV_FILE"
 fi
 # shellcheck source=../../config
 . "$CONFIG_FILE"
@@ -27,6 +33,8 @@ Cache-Control: no-cache
 javascript='window.addEventListener("keydown",(e=>{switch(e.code){'
 sorted="$(sort -f -k3 -t, "$CSV_FILE")"
 i=0
+logger -p 7 -t wifiremote-control "Sorted CSV Contents:"
+echo "$sorted" | logger -p 7 -t wifiremote-control
 while read -r line; do
 	name=$(echo "$line" | cut -d, -f2)
 	name=$(httpd -d "$name")
@@ -62,6 +70,10 @@ done <<EOF
 $sorted
 EOF
 javascript="${javascript}default:break;}}),!0);"
+logger -p 7 -t wifiremote-control "Remote HTML:"
+logger -p 7 -t wifiremote-control "$html"
+logger -p 7 -t wifiremote-control "Remote Javascript:"
+logger -p 7 -t wifiremote-control "$javascript"
 echo "$html"
 echo "</div>"
 echo "</body>"

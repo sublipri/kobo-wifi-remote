@@ -7,6 +7,7 @@
 
 action=$(echo "$REQUEST_URI" | cut -d "/" -f 2)
 action="$(urlencode "$action")"
+logger -p 7 -t wifiremote-playback "Action Basename: $action"
 if "$USE_EVEMU"; then
 	evemu-play "$INPUT_DEVICE" <"$EVENTS_DIR/$action.evemu"
 else

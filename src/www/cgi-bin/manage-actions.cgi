@@ -16,4 +16,6 @@ done <<EOF
 $sorted
 EOF
 html="${html}</select></p><p><button type=\"submit\">Delete Action</button></form>"
+echo "$sorted" | logger -p 7 -t wifiremote-manage
+logger -p 7 -t wifiremote-manage "$html"
 output-html "$html"

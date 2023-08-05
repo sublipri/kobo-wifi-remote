@@ -59,11 +59,17 @@ export DATA_DIR="$DATA_DIR"
 export DIR_LIST="$DIR_LIST"
 export FILE_LIST="$FILE_LIST"
 
-pid=""
+syslog_pid=\$(pgrep -o -f syslogd)
+while [ "\$syslog_pid" = "" ]; do
+	sleep 1
+	syslog_pid=\$(pgrep -o -f syslogd)
+done
 
+httpd_pid=""
 httpd_running() {
-	pid=\$(pgrep -o -f "^/bin/busybox httpd.*\$HTTP_DIR")
-	if [ "\$pid" != "" ]; then
+	httpd_pid=\$(pgrep -o -f "^/bin/busybox httpd.*\$HTTP_DIR")
+	if [ "\$httpd_pid" != "" ]; then
+		pgrep -laf "^/bin/busybox httpd.*\$HTTP_DIR" | logger -p 7 -t wifiremote-main
 		return 0
 	else
 		return 1
@@ -74,17 +80,28 @@ start_httpd() {
 	if httpd_running; then
 		echo "Wi-Fi Remote already running"
 	else
-		if [ "\$1" = "debug" ]; then
-			/bin/busybox httpd -vv -f -h "$HTTP_DIR" -p "$HTTP_PORT"
-		else
-			/bin/busybox httpd -f -h "$HTTP_DIR" -p "$HTTP_PORT" &
+		# If e-reader has just booted log dmesg in case there's useful info.
+		# Over time dmesg will fill up with spam that overwrites anything useful.
+		uptime="\$(cat /proc/uptime)"
+		if [ "\${uptime%%.*}" -lt 60 ]; then
+			dmesg | logger -p 7 -t wifiremote-system
 		fi
+		tr '\0' '\n' <"/proc/\$(pidof -s dbus-daemon)/environ" | sed /^snum/d | logger -p 7 -t wifiremote-system
+		df -h | logger -p 7 -t wifiremote-system
+		logger -p 6 -t wifiremote-main "Starting Wi-Fi Remote $VERSION"
+		printenv | sort | logger -p 7 -t wifiremote-main
+		# unset udev environment variables
+		unset UDEV_LOG ACTION SEQNUM IFINDEX DEVPATH SUBSYSTEM INTERFACE
+		unset OF_NAME OF_FULLNAME OF_COMPATIBLE_0 OF_TYPE OF_FULLNAME OF_COMPATIBLE_N MODALIAS DRIVER
+		/bin/busybox httpd -vv -f -h "$HTTP_DIR" -p "$HTTP_PORT" 2>&1 | logger -p 7 -t wifiremote-httpd &
 	fi
 }
 
 stop_httpd() {
 	if httpd_running; then
-		kill "\$pid"
+		logger -p 6 -t wifiremote-main "Stopping Wi-Fi Remote"
+		logger -p 7 -t wifiremote-main "Killing PID \$httpd_pid"
+		kill "\$httpd_pid"
 	else
 		echo "Wi-Fi Remote not running"
 	fi
@@ -93,7 +110,7 @@ stop_httpd() {
 enable_wifiremote() {
 	ln -s "$UDEV_FILE" "$UDEV_LINK"
 	if ! httpd_running; then
-		start_httpd normal
+		start_httpd
 	fi
 	echo "Wi-Fi Remote enabled"
 }
@@ -109,9 +126,7 @@ disable_wifiremote() {
 cmd="\$1"
 
 if [ "\$cmd" = "start" ]; then
-	start_httpd normal
-elif [ "\$cmd" = "start-debug" ]; then
-	start_httpd debug
+	start_httpd
 elif [ "\$cmd" = "stop" ]; then
 	stop_httpd
 elif [ "\$cmd" = "disable" ]; then
@@ -128,15 +143,13 @@ elif [ "\$cmd" = "uninstall" ]; then
 	stop_httpd
 	cd /
 	directories="\$(cat "$DIR_LIST")"
-	logfile="/tmp/uninstall.log"
-	rm "\$logfile"
 	while read -r filename; do
-		rm -v "\$filename" >>"\$logfile" 2>&1
+		rm -v "\$filename" 2>&1 | logger -p 6 -t wifiremote-uninstall
 	done <"$FILE_LIST"
-	rm -v "$EVENTS_DIR"/* >>"\$logfile" 2>&1
-	rmdir -v "$HTTP_DIR"/* >>"\$logfile" 2>&1
+	rm -v "$EVENTS_DIR"/* 2>&1 | logger -p 6 -t wifiremote-uninstall
+	rmdir -v "$HTTP_DIR"/* 2>&1 | logger -p 6 -t wifiremote-uninstall
 	while read -r directory; do
-		rmdir -v "\$directory" >>"\$logfile" 2>&1
+		rmdir -v "\$directory" 2>&1 | logger -p 6 -t wifiremote-uninstall
 	done <<-DELETE
 	\$directories
 	DELETE

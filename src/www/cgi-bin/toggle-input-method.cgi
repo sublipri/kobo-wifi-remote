@@ -8,9 +8,11 @@
 if "$USE_EVEMU"; then
 	sed -i -e "s|USE_EVEMU=true|USE_EVEMU=false|" "$CONFIG_FILE"
 	message="Input method changed to <strong>cat</strong>"
+	logger -p 6 -t wifiremote-input "Input method changed to cat"
 else
 	sed -i -e "s|USE_EVEMU=false|USE_EVEMU=true|" "$CONFIG_FILE"
 	message="Input method changed to <strong>evemu</strong>"
+	logger -p 6 -t wifiremote-input "Input method changed to evemu"
 fi
 
 output-html "$message"

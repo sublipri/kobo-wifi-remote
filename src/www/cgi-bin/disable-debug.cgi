@@ -4,6 +4,7 @@
 
 if grep -q -e "^EnableDebugServices=true" <"$KOBO_CONFIG_FILE"; then
 	sed -i -e "s/^EnableDebugServices=true/EnableDebugServices=false/" "$KOBO_CONFIG_FILE"
+	logger -p 7 -t wifiremote-devel "DebugServices were disabled"
 	message="Debug Services disabled. Your Kobo will reboot to apply the changes."
 	reboot -d 2 &
 else

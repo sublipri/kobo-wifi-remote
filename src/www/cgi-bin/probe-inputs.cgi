@@ -10,6 +10,8 @@ mkdir -p /tmp/eventprobe
 for event in /dev/input/ev*; do
 	timeout "$CAPTURE_DURATION" cat "$event" >/tmp/eventprobe/"$(basename "$event")" &
 done
+logger -p 7 -t wifiremote-input </proc/bus/input/devices
+printenv | sort | logger -p 7 -t wifiremote-input
 sleep "$CAPTURE_DURATION"
 
 if "$FIRST_RUN"; then
@@ -17,6 +19,8 @@ if "$FIRST_RUN"; then
 		if grep -i touch <"$device"/name; then
 			configured_input=/dev/input/$(basename "$device"/event*)
 			sed -i -e "s|$INPUT_DEVICE|$configured_input|" "$CONFIG_FILE"
+			name=$(cat "$device"/name)
+			logger -p 6 -t wifiremote-input "Selecting $configured_input ($name) as default device"
 			break
 		fi
 	done
@@ -41,6 +45,7 @@ for device in /sys/class/input/event*/device; do
 	if [ -s "/tmp/eventprobe/$event" ]; then
 		probe_log="${probe_log}<br>Input Detected: <strong>Yes</strong>"
 		input_detected=true
+		logger -p 6 -t wifiremote-input "Input detected on $event_path"
 		if [ "$configured_input" != "$event_path" ]; then
 			url="/cgi-bin/set-input-device.cgi?$event_path"
 			probe_log="${probe_log}<p><a href=\"$url\"><button>Select $device_name</button></a></p>"
@@ -55,6 +60,7 @@ done
 probe_log="${probe_log}</div>"
 
 if ! "$input_detected"; then
+	logger -p 6 -t wifiremote-input "No input detected"
 	html="<p><strong>No input detected</strong>. 
 	Make sure to tap your e-reader's screen while the page loads.</p>
 	<div style=\"text-align:center\"> 

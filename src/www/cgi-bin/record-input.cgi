@@ -4,12 +4,14 @@
 
 # shellcheck source=../../config
 . "$CONFIG_FILE"
+printenv | sort | logger -p 7 -t wifiremote-record
 
 QUERY_STRING=$(echo "$QUERY_STRING" | sed -e "s/\*/%2A/g" -e "s/\./%2E/g" -e "s/+/%20/g")
 get_var() {
 	echo "$QUERY_STRING" | sed -n "s|^.*${1}=\([^&]*\).*$|\1|p"
 }
 
+logger -p 7 -t wifiremote-record "Encoded Query String: $QUERY_STRING"
 path_segment=$(get_var "path-segment")
 display_name=$(get_var "display-name")
 sort_value=$(get_var "sort-value")
@@ -52,6 +54,7 @@ else
 fi
 
 if ! "$valid_query_string"; then
+	logger -p 6 -t wifiremote-record "Error: $message"
 	output-html "Error: $message"
 	exit
 fi
@@ -62,6 +65,7 @@ tmp_recording="/tmp/action"
 if "$USE_EVEMU"; then
 	action_file="$EVENTS_DIR/$path_segment.evemu"
 	timeout "$duration" evemu-record "$INPUT_DEVICE" >"$tmp_recording"
+	logger -p 7 -t wifiremote-record <"$tmp_recording"
 	if grep -q -e '^E' <"$tmp_recording"; then
 		touchscreen_input_detected=true
 	fi
@@ -74,18 +78,23 @@ else
 fi
 
 if "$touchscreen_input_detected"; then
-	mv "$tmp_recording" "$action_file"
+	mv -v "$tmp_recording" "$action_file" 2>&1 | logger -p 7 -t wifiremote-record
 	name="$(httpd -d "$display_name")"
 	message="Successfully recorded input for <strong>$name</strong>."
-	mkdir -p "$action_dir"
+	mkdir -v -p "$action_dir" 2>&1 | logger -p 6 -t wifiremote-record
 	csv_line="$path_segment,$display_name,$sort_value,$keyboard_shortcut"
+	logger -p 7 -t wifiremote-record "New CSV Line: $csv_line"
+	logger -p 7 -t wifiremote-record "Original CSV Contents:"
+	logger -p 7 -t wifiremote-record <"$CSV_FILE"
 	if grep -q -e "^$path_segment," <"$CSV_FILE"; then
 		sed -i -e "/^$path_segment,/c$csv_line" "$CSV_FILE"
 	else
 		echo "$csv_line" >>"$CSV_FILE"
 	fi
+	logger -p 7 -t wifiremote-record "Updated CSV Contents:"
+	logger -p 7 -t wifiremote-record <"$CSV_FILE"
 else
-	rm "$tmp_recording"
+	rm -v "$tmp_recording" 2>&1 | logger -p 7 -t wifiremote-record
 	javascript="<script type='module'>import { setup } from '/js/alert-recording.js'; setup($duration);</script>"
 	message="<p>No input detected.</p> <p><a href=\"javascript:window.location.reload()\"><button class=records-input>Try Again</button></a>"
 fi
