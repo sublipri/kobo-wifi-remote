@@ -36,7 +36,7 @@ start_httpd() {
 		fi
 		tr '\0' '\n' <"/proc/$(pidof -s dbus-daemon)/environ" | sed /^snum/d | logger -p 7 -t wifiremote-system
 		df -h | logger -p 7 -t wifiremote-system
-		logger -p 6 -t wifiremote-main "Starting Wi-Fi Remote 0.1.0"
+		logger -p 6 -t wifiremote-main "Starting Wi-Fi Remote $VERSION"
 		printenv | sort | logger -p 7 -t wifiremote-main
 		check_config
 		# unset unneeded environment variables so they're not logged
