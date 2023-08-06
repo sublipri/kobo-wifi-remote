@@ -1,4 +1,4 @@
-# Kobo Wi-Fi Remote 0.1.0
+# Kobo Wi-Fi Remote 0.1.1
 
 Kobo Wi-Fi Remote is a web-based remote control/page turner for Kobo e-readers. It uses the BusyBox HTTP server included with Kobo's stock firmware to serve a website that can record and playback touchscreen inputs via CGI shell scripts. It is **not** safe to use on public Wi-Fi networks.
 
