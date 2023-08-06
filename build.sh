@@ -33,7 +33,7 @@ cp -r -t ./build/root/"$BIN_DIR" ./bin/evemu-* ./src/wifiremote.sh
 cp -r -t ./build/root/"$LICENSE_DIR" ./bin/licenses/*
 mkdir ./build/root/"$LICENSE_DIR"/wifiremote
 cp -t ./build/root/"$LICENSE_DIR"/wifiremote ./LICENSE
-cp -t ./build/root/"$USER_DIR" ./src/config
+cp ./src/config ./build/root/"$USER_DIR"/config.new
 
 # create udev rule to start wifiremote when a network device is added
 UDEV_RULES="KERNEL==\"eth*\", ACTION==\"add\", RUN+=\"$BIN_DIR/wifiremote start\"
@@ -77,7 +77,7 @@ cd ./build/root
 exclude='/^\.\/(mnt|etc|mnt\/onboard)$/d'
 find . -mindepth 1 -type d | sort -r | sed -E "$exclude" | sed "s|^\.||" >./"$DIR_LIST"
 find ./ \( -type f -o -type l \) | sed "s|^\.||" >./"$FILE_LIST"
-echo "$CSV_FILE" >>./"$FILE_LIST"
+{ echo "$CSV_FILE"; echo "$USER_DIR"/config; } >>./"$FILE_LIST"
 # Add files from previous versions that have been removed
 echo "$HTTP_DIR/cgi-bin/lib/httpd-log" >>./"$FILE_LIST"
 cd ../..

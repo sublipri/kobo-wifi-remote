@@ -38,11 +38,36 @@ start_httpd() {
 		df -h | logger -p 7 -t wifiremote-system
 		logger -p 6 -t wifiremote-main "Starting Wi-Fi Remote 0.1.0"
 		printenv | sort | logger -p 7 -t wifiremote-main
+		check_config
 		# unset unneeded environment variables so they're not logged
 		unset UDEV_LOG ACTION SEQNUM IFINDEX DEVPATH SUBSYSTEM INTERFACE
 		unset OF_NAME OF_FULLNAME OF_COMPATIBLE_0 OF_TYPE OF_FULLNAME OF_COMPATIBLE_N MODALIAS DRIVER
 		unset UDEV_LINK UDEV_FILE
 		/bin/busybox httpd -vv -f -h "$HTTP_DIR" -p "$HTTP_PORT" 2>&1 | logger -p 7 -t wifiremote-httpd &
+	fi
+}
+
+check_config() {
+	logger -p 7 -t wifiremote-main -- "--- Contents of $CONFIG_FILE ---"
+	if [ -s "$CONFIG_FILE" ]; then
+		logger -p 7 -t wifiremote-main <"$CONFIG_FILE"
+	fi
+	if [ -s "$CONFIG_FILE".new ]; then
+		logger -p 7 -t wifiremote-main -- "--- Contents of $CONFIG_FILE.new ---"
+		logger -p 7 -t wifiremote-main <"$CONFIG_FILE.new"
+		if [ ! -s "$CONFIG_FILE" ]; then
+			mv -v "$CONFIG_FILE.new" "$CONFIG_FILE" 2>&1 | logger -p 7 -t wifiremote-main
+		else
+			while read -r line; do
+				prefix=$(echo "$line" | grep -o "^.*=")
+				if ! grep -q "$prefix" <"$CONFIG_FILE"; then
+					echo "$line" >>"$CONFIG_FILE"
+				fi
+			done <"$CONFIG_FILE.new"
+			rm -v "$CONFIG_FILE.new" 2>&1 | logger -p 7 -t wifiremote-main
+			logger -p 7 -t wifiremote-main -- "--- Updated Config File ---"
+			logger -p 7 -t wifiremote-main <"$CONFIG_FILE"
+		fi
 	fi
 }
 
