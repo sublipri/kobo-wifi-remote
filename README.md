@@ -30,3 +30,7 @@ There are some screenshots in the thread on [MobileRead](https://www.mobileread.
 
 1. Extract the `Uninstaller.zip` file included with the release.
 1. Follow steps 2-6 of the installation process.
+
+## Troubleshooting/Reporting Bugs
+
+Scroll to the bottom of the homepage (at your e-reader's IP address) and press Troubleshooting. There you'll find instructions for generating a log file and reporting issues.
