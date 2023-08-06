@@ -78,7 +78,7 @@ else
 fi
 
 if "$touchscreen_input_detected"; then
-	mv -v "$tmp_recording" "$action_file" 2>&1 | logger -p 7 -t wifiremote-record
+	mv -f -v "$tmp_recording" "$action_file" 2>&1 | logger -p 7 -t wifiremote-record
 	name="$(httpd -d "$display_name")"
 	message="Successfully recorded input for <strong>$name</strong>."
 	mkdir -v -p "$action_dir" 2>&1 | logger -p 6 -t wifiremote-record
