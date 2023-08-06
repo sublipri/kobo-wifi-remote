@@ -172,6 +172,8 @@ exclude='/^\.\/(mnt|etc|mnt\/onboard)$/d'
 find . -mindepth 1 -type d | sort -r | sed -E "$exclude" | sed "s|^\.||" >./"$DIR_LIST"
 find ./ \( -type f -o -type l \) | sed "s|^\.||" >./"$FILE_LIST"
 echo "$CSV_FILE" >>./"$FILE_LIST"
+# Add files from previous versions that have been removed
+echo "$HTTP_DIR/cgi-bin/lib/httpd-log" >>./"$FILE_LIST"
 cd ../..
 
 create_tgz() {
