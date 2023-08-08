@@ -75,11 +75,9 @@ EOF
 cd ./build/root
 # rmdir will only delete empty directories but we'll exclude some for good measure
 exclude='/^\.\/(mnt|etc|mnt\/onboard)$/d'
-find . -mindepth 1 -type d | sort -r | sed -E "$exclude" | sed "s|^\.||" >./"$DIR_LIST"
-find ./ \( -type f -o -type l \) | sed "s|^\.||" >./"$FILE_LIST"
-{ echo "$CSV_FILE"; echo "$USER_DIR"/config; } >>./"$FILE_LIST"
-# Add files from previous versions that have been removed
-echo "$HTTP_DIR/cgi-bin/lib/httpd-log" >>./"$FILE_LIST"
+find . -mindepth 1 -type d | sort -r | sed -E "$exclude" | sed "s|^\.||" >./"$DIR_LIST.new"
+find ./ \( -type f -o -type l \) | sed "s|^\.||" | sed 's|\.new$||' | sort >./"$FILE_LIST.new"
+echo "$CSV_FILE" >>./"$FILE_LIST.new"
 cd ../..
 
 create_tgz() {

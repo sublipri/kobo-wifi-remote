@@ -38,7 +38,7 @@ start_httpd() {
 		df -h | logger -p 7 -t wifiremote-system
 		logger -p 6 -t wifiremote-main "Starting Wi-Fi Remote $VERSION"
 		printenv | sort | logger -p 7 -t wifiremote-main
-		check_config
+		merge_updated_files
 		# unset unneeded environment variables so they're not logged
 		unset UDEV_LOG ACTION SEQNUM IFINDEX DEVPATH SUBSYSTEM INTERFACE
 		unset OF_NAME OF_FULLNAME OF_COMPATIBLE_0 OF_TYPE OF_FULLNAME OF_COMPATIBLE_N MODALIAS DRIVER
@@ -47,7 +47,8 @@ start_httpd() {
 	fi
 }
 
-check_config() {
+merge_updated_files() {
+	# Merge new configuration options with the existing config file
 	logger -p 7 -t wifiremote-main -- "--- Contents of $CONFIG_FILE ---"
 	if [ -s "$CONFIG_FILE" ]; then
 		logger -p 7 -t wifiremote-main <"$CONFIG_FILE"
@@ -67,6 +68,29 @@ check_config() {
 			rm -v "$CONFIG_FILE.new" 2>&1 | logger -p 7 -t wifiremote-main
 			logger -p 7 -t wifiremote-main -- "--- Updated Config File ---"
 			logger -p 7 -t wifiremote-main <"$CONFIG_FILE"
+		fi
+	fi
+	# Merge new file and directory lists with the existing ones
+	if [ -s "$FILE_LIST.new" ]; then
+		if [ -s "$FILE_LIST" ]; then
+			newfiles=$(cat "$FILE_LIST" "$FILE_LIST.new" | sort -u)
+			logger -p 7 -t wifiremote-main -- "--- Updated File List ---"
+			echo "$newfiles" | logger -p 7 -t wifiremote-main
+			echo "$newfiles" >"$FILE_LIST"
+			rm "$FILE_LIST.new"
+		else
+			mv "$FILE_LIST.new" "$FILE_LIST"
+		fi
+	fi
+	if [ -s "$DIR_LIST.new" ]; then
+		if [ -s "$DIR_LIST" ]; then
+			newdirs=$(cat "$DIR_LIST" "$DIR_LIST.new" | sort -r -u)
+			logger -p 7 -t wifiremote-main -- "--- Updated Directory List ---"
+			echo "$newdirs" | logger -p 7 -t wifiremote-main
+			echo "$newdirs" >"$DIR_LIST"
+			rm "$DIR_LIST.new"
+		else
+			mv "$DIR_LIST.new" "$DIR_LIST"
 		fi
 	fi
 }
