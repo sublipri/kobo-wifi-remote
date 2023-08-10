@@ -4,7 +4,6 @@
 
 # shellcheck source=../../config
 . "$CONFIG_FILE"
-configured_input=$INPUT_DEVICE
 
 mkdir -p /tmp/eventprobe
 for event in /dev/input/ev*; do
@@ -14,6 +13,7 @@ logger -p 7 -t wifiremote-input </proc/bus/input/devices
 printenv | sort | logger -p 7 -t wifiremote-input
 sleep "$CAPTURE_DURATION"
 
+configured_input=$INPUT_DEVICE
 if "$FIRST_RUN"; then
 	for device in /sys/class/input/event*/device; do
 		if grep -i touch <"$device"/name; then
@@ -29,12 +29,12 @@ fi
 
 input_detected=false
 configured_input_detected=false
-probe_log="<div style=\"text-align: left\"><p>The following input devices were probed:</p>"
+probe_log="<p style='text-align: left'>The following input devices were probed:</p>"
 for device in /sys/class/input/event*/device; do
 	event=$(basename "$device"/event*)
 	event_path=/dev/input/"$event"
 	device_name=$(cat "$device"/name)
-	probe_log="${probe_log}<p><strong>$event_path:</strong>"
+	probe_log="${probe_log}<p style='text-align: left'><strong>$event_path:</strong>"
 	probe_log="${probe_log}<br>Name: $device_name"
 	if [ "$configured_input" = "$event_path" ]; then
 		probe_log="${probe_log}<br>Selected Device: <strong>Yes</strong>"
@@ -63,8 +63,7 @@ if ! "$input_detected"; then
 	logger -p 6 -t wifiremote-input "No input detected"
 	html="<p><strong>No input detected</strong>. 
 	Make sure to tap your e-reader's screen while the page loads.</p>
-	<div style=\"text-align:center\"> 
-	<p><a href=\"javascript:window.location.reload()\"><button class='records-input'>Try Again</button></a></p></div>"
+	<p><a href=\"javascript:window.location.reload()\"><button class='records-input'>Try Again</button></a></p>"
 elif "$configured_input_detected"; then
 	html="<p><strong>Everything okay!</strong> 
 	Input detected on the selected device.</p>"
