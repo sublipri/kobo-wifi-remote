@@ -88,7 +88,7 @@ create_tgz() {
 
 if [ "$1" = 'deploy' ]; then
 	rsync -vrlh ./build/root/ root@"$KOBO_HOST":/
-	ssh root@"$KOBO_HOST" -- "$MAIN_SCRIPT" start
+	ssh root@"$KOBO_HOST" -- "$MAIN_SCRIPT" restart
 	rm -r ./build
 else
 	create_tgz

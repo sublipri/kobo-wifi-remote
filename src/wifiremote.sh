@@ -127,6 +127,12 @@ if [ "$cmd" = "start" ]; then
 	start_httpd
 elif [ "$cmd" = "stop" ]; then
 	stop_httpd
+elif [ "$cmd" = "restart" ]; then
+	if httpd_running; then
+		stop_httpd
+		sleep 0.5
+	fi
+	start_httpd
 elif [ "$cmd" = "disable" ]; then
 	disable_wifiremote
 elif [ "$cmd" = "enable" ]; then
@@ -151,4 +157,6 @@ elif [ "$cmd" = "uninstall" ]; then
 	done <<-DELETE
 		$directories
 	DELETE
+else
+	echo "Valid arguments: start stop restart disable enable toggle uninstall"
 fi
