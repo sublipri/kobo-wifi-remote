@@ -1,6 +1,0 @@
-#!/bin/sh
-
-export CAPTURE_DURATION=5
-export INPUT_DEVICE=/dev/input/event1
-export USE_EVEMU=true
-export FIRST_RUN=true
