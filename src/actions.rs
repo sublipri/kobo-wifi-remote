@@ -156,6 +156,11 @@ impl Action {
             recordings: [None, None, None, None],
         })
     }
+
+    pub fn shortcut_name(&self) -> String {
+        self.keyboard_shortcut.map_or("None".to_string(), |s| s.to_string() )
+    }
+
     pub fn record(&mut self, opts: &RecordActionOptions) -> Result<()> {
         let devices = get_input_devices()?;
         let rotation = current_rotation();
