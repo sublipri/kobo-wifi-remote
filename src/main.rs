@@ -12,7 +12,9 @@ use axum::{
 use templates::RemoteControl;
 use tokio::sync::{mpsc, oneshot};
 use tower::Layer;
-use tower_http::normalize_path::NormalizePathLayer;
+use tower_http::{
+    normalize_path::NormalizePathLayer, set_header::response::SetResponseHeaderLayer,
+};
 use tracing::debug;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
@@ -86,6 +88,11 @@ async fn main() -> Result<()> {
         .with_state(state);
 
     let app = NormalizePathLayer::trim_trailing_slash().layer(app);
+    let app = SetResponseHeaderLayer::overriding(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("no-cache"),
+    )
+    .layer(app);
     let app = ServiceExt::<Request>::into_make_service(app);
     let host = format!("0.0.0.0:{}", config.port);
     let listener = tokio::net::TcpListener::bind(host).await.unwrap();
