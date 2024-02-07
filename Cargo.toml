@@ -22,7 +22,7 @@ serde_with = { version = "3.5.1", features = ["chrono"] }
 slug = "0.1.5"
 tokio = { version = "1.35.1", features = ["full"] }
 tower = "0.4.13"
-tower-http = { version = "0.5.1", features = ["normalize-path"] }
+tower-http = { version = "0.5.1", features = ["normalize-path", "set-header"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
