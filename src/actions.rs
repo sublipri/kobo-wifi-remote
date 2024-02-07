@@ -135,6 +135,7 @@ pub struct ActionRecording {
     pub rotation: usize,
     pub events: Vec<ActionEvent>,
     pub dev_path: PathBuf,
+    pub is_optimized: bool,
 }
 
 fn current_rotation() -> usize {
@@ -196,13 +197,16 @@ impl Action {
             devices_with_events.into_iter().next().unwrap()
         };
 
-        if opts.optimize {
-            optimize_events(&mut events, opts.syn_gap);
-        }
+        let is_optimized = if opts.optimize {
+            optimize_events(&mut events, opts.syn_gap)
+        } else {
+            false
+        };
         let recording = ActionRecording {
             dev_path: device.path,
             events: create_action_events(&events),
             rotation,
+            is_optimized,
         };
         self.recordings[rotation] = Some(recording);
         Ok(())
