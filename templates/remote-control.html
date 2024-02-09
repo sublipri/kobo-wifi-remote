@@ -27,10 +27,10 @@ SPDX-License-Identifier: GPL-3.0-only
       <button
         class="remote-button colored-button"
         type="button"
-        id="btn-{{action.uri}}"
+        id="btn-{{action.path_segment}}"
         style="background-color: {{color}}"
         title='Next (Shortcut: {{action.shortcut_name()}})'
-        onclick='fetch("/actions/{{action.uri}}")'
+        onclick='fetch("/actions/{{action.path_segment}}")'
       >
         {{-action.name}}
       </button>
@@ -46,9 +46,9 @@ SPDX-License-Identifier: GPL-3.0-only
     window.addEventListener(
       "keydown",
       (e) => {
-        for (const [key, uri] of Object.entries(shortcuts)) {
+        for (const [key, path_segment] of Object.entries(shortcuts)) {
           if (e.code === key) {
-            const btnId = "btn-" + uri;
+            const btnId = "btn-" + path_segment;
             const btn = document.getElementById(btnId);
             if (btn) {
               btn.click();

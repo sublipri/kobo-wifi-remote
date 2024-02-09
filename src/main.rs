@@ -74,11 +74,11 @@ async fn main() -> Result<()> {
         )
         .route("/remote-control", get(remote_control))
         // Now that we're not restricted by the BusyBox HTTP server we'll switch to an
-        // /actions/:uri endpoint, but keep /left and /right for compatibility with KoboPageTurner
+        // /actions/:path_segment endpoint, but keep /left and /right for compatibility with KoboPageTurner
         // and anything that users integrated with the original version
         .route("/actions", get(get_actions))
         .route("/actions", post(record_action))
-        .route("/actions/:uri", get(play_action))
+        .route("/actions/:path_segment", get(play_action_handler))
         .route("/left", get(prev_page))
         .route("/right", get(next_page))
         .route("/styles/main.css", get(main_css))
@@ -131,11 +131,11 @@ async fn colored_buttons() -> impl IntoResponse {
 }
 
 async fn next_page(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
-    Ok(play_uri("next-page".into(), &state).await?)
+    Ok(play_action("next-page".into(), &state).await?)
 }
 
 async fn prev_page(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
-    Ok(play_uri("prev-page".into(), &state).await?)
+    Ok(play_action("prev-page".into(), &state).await?)
 }
 
 async fn remote_control(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
@@ -146,11 +146,14 @@ async fn remote_control(State(state): State<AppState>) -> Result<impl IntoRespon
     let mut shortcuts = HashMap::new();
     for a in &actions {
         if let Some(shortcut) = a.keyboard_shortcut {
-            shortcuts.insert(shortcut, a.uri.clone());
+            shortcuts.insert(shortcut, a.path_segment.clone());
         }
     }
     let shortcuts_json = serde_json::to_string_pretty(&shortcuts)?;
-    Ok(RemoteControl { actions, shortcuts_json })
+    Ok(RemoteControl {
+        actions,
+        shortcuts_json,
+    })
 }
 
 async fn get_actions(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
@@ -160,17 +163,21 @@ async fn get_actions(State(state): State<AppState>) -> Result<impl IntoResponse,
     Ok(Json(actions))
 }
 
-async fn play_action(
+async fn play_action_handler(
     State(state): State<AppState>,
-    AxumPath(uri): AxumPath<String>,
+    AxumPath(path_segment): AxumPath<String>,
 ) -> Result<impl IntoResponse, AppError> {
-    Ok(play_uri(uri, &state).await?)
+    Ok(play_action(path_segment, &state).await?)
 }
 
-async fn play_uri(uri: String, state: &AppState) -> Result<()> {
-    debug!("Received request to play action {uri}");
+async fn play_action(path_segment: String, state: &AppState) -> Result<()> {
+    debug!("Received request to play action {path_segment}");
     let (tx, rx) = oneshot::channel();
-    state.tx.send(ActionMsg::Play { uri, resp: tx }).await?;
+    let msg = ActionMsg::Play {
+        path_segment,
+        resp: tx,
+    };
+    state.tx.send(msg).await?;
     rx.await??;
     debug!("Successfully played action");
     Ok(())

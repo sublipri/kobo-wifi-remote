@@ -47,15 +47,15 @@ impl ActionManager {
     }
 
     fn record(&mut self, opts: RecordActionOptions) -> Result<()> {
-        let uri = opts.uri.clone().unwrap_or(slugify(&opts.name));
-        if let Some(ref mut action) = self.actions.get_mut(&uri) {
+        let path_segment = opts.path_segment.clone().unwrap_or(slugify(&opts.name));
+        if let Some(ref mut action) = self.actions.get_mut(&path_segment) {
             action.record(&opts)?;
             return Ok(());
         }
 
         let mut action = Action::new(&opts)?;
         action.record(&opts)?;
-        self.actions.insert(uri, action);
+        self.actions.insert(path_segment, action);
         let bytes = bincode::serialize(&self.actions).context("Failed to serialize actions")?;
         debug!("Writing actions to {}", &self.path.display());
         fs::write(&self.path, bytes)
@@ -63,14 +63,14 @@ impl ActionManager {
         Ok(())
     }
 
-    fn play(&mut self, uri: &str) -> Result<()> {
+    fn play(&mut self, path_segment: &str) -> Result<()> {
         // Don't play consecutive actions immediately so the device has time to act on the input.
         // Allows a user to spam page turns and have them all register
         if Utc::now() < self.play_wait_until {
             sleep(self.play_wait_until - Utc::now());
         }
-        let Some(action) = self.actions.get(uri) else {
-            return Err(anyhow!("No action exists for {uri}"));
+        let Some(action) = self.actions.get(path_segment) else {
+            return Err(anyhow!("No action exists for {path_segment}"));
         };
         action.play()?;
         self.play_wait_until = Utc::now() + action.post_playback_delay;
@@ -86,8 +86,8 @@ impl ActionManager {
                         warn!("Unable to send Record result. Receiver dropped")
                     }
                 }
-                Some(ActionMsg::Play { uri, resp }) => {
-                    let result = self.play(&uri);
+                Some(ActionMsg::Play { path_segment, resp }) => {
+                    let result = self.play(&path_segment);
                     if resp.send(result).is_err() {
                         warn!("Unable to send Play result. Receiver dropped")
                     }
@@ -110,7 +110,7 @@ pub enum ActionMsg {
         resp: oneshot::Sender<Result<()>>,
     },
     Play {
-        uri: String,
+        path_segment: String,
         resp: oneshot::Sender<Result<()>>,
     },
     List {
@@ -122,7 +122,7 @@ pub enum ActionMsg {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Action {
     pub name: String,
-    pub uri: String,
+    pub path_segment: String,
     pub sort_value: String,
     pub keyboard_shortcut: Option<keyboard_types::Code>,
     pub recordings: [Option<ActionRecording>; 4],
@@ -150,7 +150,7 @@ impl Action {
     pub fn new(opts: &RecordActionOptions) -> Result<Self> {
         Ok(Self {
             sort_value: opts.sort_value.clone().unwrap_or(opts.name.clone()),
-            uri: opts.uri.clone().unwrap_or(slugify(&opts.name)),
+            path_segment: opts.path_segment.clone().unwrap_or(slugify(&opts.name)),
             name: opts.name.clone(),
             keyboard_shortcut: opts.keyboard_shortcut,
             post_playback_delay: opts.post_playback_delay,
@@ -159,7 +159,8 @@ impl Action {
     }
 
     pub fn shortcut_name(&self) -> String {
-        self.keyboard_shortcut.map_or("None".to_string(), |s| s.to_string() )
+        self.keyboard_shortcut
+            .map_or("None".to_string(), |s| s.to_string())
     }
 
     pub fn record(&mut self, opts: &RecordActionOptions) -> Result<()> {
@@ -230,7 +231,7 @@ impl Action {
 
         debug!(
             "Writing events for {} to {}",
-            &self.uri,
+            &self.path_segment,
             &recording.dev_path.display()
         );
         for ev in &recording.events {
@@ -239,7 +240,7 @@ impl Action {
                 sleep(dur);
             }
         }
-        debug!("Finished writing events for {}", &self.uri);
+        debug!("Finished writing events for {}", &self.path_segment);
 
         Ok(())
     }
@@ -251,7 +252,7 @@ impl Action {
 pub struct RecordActionOptions {
     pub name: String,
     pub sort_value: Option<String>,
-    pub uri: Option<String>,
+    pub path_segment: Option<String>,
     pub keyboard_shortcut: Option<keyboard_types::Code>,
     pub only_check_touch: bool,
     pub optimize: bool,
@@ -272,7 +273,7 @@ impl Default for RecordActionOptions {
         Self {
             name: "Default".into(),
             sort_value: None,
-            uri: None,
+            path_segment: None,
             keyboard_shortcut: None,
             only_check_touch: true,
             optimize: true,
