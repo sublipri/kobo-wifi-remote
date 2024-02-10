@@ -287,7 +287,7 @@ impl Default for RecordActionOptions {
 }
 
 #[serde_with::serde_as]
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 /// InputEvent that's been processed ready to use as part of an action
 pub struct ActionEvent {
     /// native endian bytes ready to write to the input device
@@ -295,6 +295,15 @@ pub struct ActionEvent {
     /// How long to sleep for after writing the input event
     #[serde_as(as = "Option<DurationMicroSeconds<i64>>")]
     pub sleep_duration: Option<Duration>,
+}
+
+impl Default for ActionEvent {
+    fn default() -> Self {
+        Self {
+            buf: Vec::with_capacity(16),
+            sleep_duration: None,
+        }
+    }
 }
 
 fn create_action_events(events: &[InputEvent]) -> Vec<ActionEvent> {
@@ -312,11 +321,11 @@ fn create_action_events(events: &[InputEvent]) -> Vec<ActionEvent> {
         let seconds = time_since_start.num_seconds() as usize;
         let microseconds = time_since_start.num_microseconds().unwrap() as usize % 1_000_000;
         let mut ae = ActionEvent::default();
-        ae.buf.extend_from_slice(&seconds.to_ne_bytes());
-        ae.buf.extend_from_slice(&microseconds.to_ne_bytes());
-        ae.buf.extend_from_slice(&(ev_type as u16).to_ne_bytes());
-        ae.buf.extend_from_slice(&(ev_code as u16).to_ne_bytes());
-        ae.buf.extend_from_slice(&ev.value.to_ne_bytes());
+        ae.buf.extend(seconds.to_ne_bytes());
+        ae.buf.extend(microseconds.to_ne_bytes());
+        ae.buf.extend((ev_type as u16).to_ne_bytes());
+        ae.buf.extend((ev_code as u16).to_ne_bytes());
+        ae.buf.extend(ev.value.to_ne_bytes());
         if let Some(next) = iter.peek() {
             let next_time = parse_timeval(next.time);
             let gap = next_time - ev_time;
