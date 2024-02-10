@@ -190,7 +190,7 @@ async fn record_action(
     debug!("Received request to record action: {:?}", &opts);
     let (tx, rx) = oneshot::channel();
     state.tx.send(ActionMsg::Record { opts, resp: tx }).await?;
-    rx.await??;
+    let response = rx.await??;
     debug!("Successfully recorded action");
-    Ok(())
+    Ok(Json(response))
 }

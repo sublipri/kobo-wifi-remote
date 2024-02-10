@@ -46,21 +46,21 @@ impl ActionManager {
         })
     }
 
-    fn record(&mut self, opts: RecordActionOptions) -> Result<()> {
+    fn record(&mut self, opts: RecordActionOptions) -> Result<RecordActionResponse> {
         let path_segment = opts.path_segment.clone().unwrap_or(slugify(&opts.name));
         if let Some(ref mut action) = self.actions.get_mut(&path_segment) {
-            action.record(&opts)?;
-            return Ok(());
+            let response = action.record(&opts)?;
+            return Ok(response);
         }
 
         let mut action = Action::new(&opts)?;
-        action.record(&opts)?;
+        let response = action.record(&opts)?;
         self.actions.insert(path_segment, action);
         let bytes = bincode::serialize(&self.actions).context("Failed to serialize actions")?;
         debug!("Writing actions to {}", &self.path.display());
         fs::write(&self.path, bytes)
             .with_context(|| format!("Failed to write actions to {}", self.path.display()))?;
-        Ok(())
+        Ok(response)
     }
 
     fn play(&mut self, path_segment: &str) -> Result<()> {
@@ -107,7 +107,7 @@ impl ActionManager {
 pub enum ActionMsg {
     Record {
         opts: RecordActionOptions,
-        resp: oneshot::Sender<Result<()>>,
+        resp: oneshot::Sender<Result<RecordActionResponse>>,
     },
     Play {
         path_segment: String,
@@ -146,6 +146,14 @@ fn current_rotation() -> usize {
     framebuffer.var_screen_info.rotate as usize
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RecordActionResponse {
+    pub name: String,
+    pub rotation: usize,
+    pub was_optimized: bool,
+    pub device: String,
+}
+
 impl Action {
     pub fn new(opts: &RecordActionOptions) -> Result<Self> {
         Ok(Self {
@@ -163,7 +171,7 @@ impl Action {
             .map_or("None".to_string(), |s| s.to_string())
     }
 
-    pub fn record(&mut self, opts: &RecordActionOptions) -> Result<()> {
+    pub fn record(&mut self, opts: &RecordActionOptions) -> Result<RecordActionResponse> {
         let devices = get_input_devices()?;
         let rotation = current_rotation();
 
@@ -203,6 +211,14 @@ impl Action {
         } else {
             false
         };
+
+        let response = RecordActionResponse {
+            name: self.name.clone(),
+            rotation,
+            was_optimized: is_optimized,
+            device: format!("{}", &device),
+        };
+
         let recording = ActionRecording {
             dev_path: device.path,
             events: create_action_events(&events),
@@ -210,7 +226,8 @@ impl Action {
             is_optimized,
         };
         self.recordings[rotation] = Some(recording);
-        Ok(())
+
+        Ok(response)
     }
 
     pub fn play(&self) -> Result<()> {
