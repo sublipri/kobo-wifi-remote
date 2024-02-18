@@ -83,7 +83,7 @@ async fn main() -> Result<()> {
         .route("/right", get(next_page))
         .route("/styles/main.css", get(main_css))
         .route("/styles/remote.css", get(remote_css))
-        .route("/js/alert-recording.js", get(alert_recording))
+        .route("/js/record-action.js", get(record_action_js))
         .route("/js/colored-buttons.js", get(colored_buttons))
         .with_state(state);
 
@@ -112,13 +112,13 @@ async fn remote_css() -> impl IntoResponse {
     (headers, include_str!("www/styles/remote.css"))
 }
 
-async fn alert_recording() -> impl IntoResponse {
+async fn record_action_js() -> impl IntoResponse {
     let mut headers = HeaderMap::new();
     headers.insert(
         header::CONTENT_TYPE,
         HeaderValue::from_static("text/javascript"),
     );
-    (headers, include_str!("www/js/alert-recording.js"))
+    (headers, include_str!("www/js/record-action.js"))
 }
 
 async fn colored_buttons() -> impl IntoResponse {
