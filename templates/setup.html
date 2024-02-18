@@ -11,53 +11,71 @@ SPDX-License-Identifier: GPL-3.0-only
   </head>
   <body>
     <p>
-      To ensure your touchscreen is recognized, press the following button then
-      tap your e-reader's screen within five seconds.
-    </p>
-    <p>
-      <a href="/cgi-bin/probe-inputs.cgi"
-        ><button type="button" id="probe-inputs" class="records-input">
-          Check Input Device
-        </button></a
-      >
-    </p>
-    <p>
       To setup page turning, press each button below then perform the specified
-      input on your e-reader within five seconds.
+      input within five seconds. Using a swipe is recommended,
+      as a tap might occasionally trigger a footnote or hyperlink.
     </p>
-    <p>
-      If you require support for both portrait and landscape, tap the screen in
-      an area that will trigger the correct page turn in both orientations (e.g.
-      near the top right and bottom left while in portrait).
-    </p>
-    <p>
-      Otherwise, using a swipe is recommended. A tap might occasionally trigger
-      a footnote or hyperlink, and on some older models it can be hard to record
-      a tap that will reliably turn pages.
-    </p>
-    <p>
-      <a
-        href="/cgi-bin/record-action.cgi?path-segment=right&display-name=Next&sort-value=%00&keyboard-shortcut=ArrowRight"
-        ><button type="button" class="records-input" id="record-next">
+    <form class="action-form" id="record-next-form">
+      <input type="hidden" name="name" value="Next" />
+      <input type="hidden" name="sort_value" value="%00" />
+      <input type="hidden" name="path_segment" value="next-page" />
+      <input type="hidden" name="keyboard_shortcut" value="ArrowRight" />
+      <input
+        type="hidden"
+        name="no_input_timeout"
+        value="5000"
+        class="input-number"
+      />
+      <input
+        type="hidden"
+        name="new_event_timeout"
+        value="500"
+        class="input-number"
+      />
+      <p>
+        <button
+          type="button"
+          name="record-next"
+          class="records-input"
+          id="record-next-btn"
+        >
           Next Page
-        </button></a
-      >
-    </p>
-    <p>
-      <a
-        href="/cgi-bin/record-action.cgi?path-segment=left&display-name=Prev&sort-value=%01&keyboard-shortcut=ArrowLeft"
-        ><button type="button" class="records-input" id="record-prev">
+        </button>
+      </p>
+    </form>
+    <form class="action-form" id="record-prev-form">
+      <input type="hidden" name="name" value="Prev" />
+      <input type="hidden" name="sort_value" value="%01" />
+      <input type="hidden" name="path_segment" value="prev-page" />
+      <input type="hidden" name="keyboard_shortcut" value="ArrowLeft" />
+      <input
+        type="hidden"
+        name="no_input_timeout"
+        value="5000"
+        class="input-number"
+      />
+      <input
+        type="hidden"
+        name="new_event_timeout"
+        value="500"
+        class="input-number"
+      />
+      <p>
+        <button
+          type="button"
+          name="record-prev"
+          class="records-input"
+          id="record-prev-btn"
+        >
           Previous Page
-        </button></a
-      >
-    </p>
+        </button>
+      </p>
+    </form>
     <p>
-      If you make a mistake or ever need to change a recording, just re-record
-      the input and it will overwrite the previous one.
-    </p>
-    <p>
-      Note: if your e-reader automatically rotates the screen orientation, when
-      it's upside down the page turns will be reversed.
+      If your device supports screen rotation, you must record the inputs for
+      each rotation you require. If you make a mistake or ever need to change a
+      recording, just re-record the input and it will overwrite the previous
+      one.
     </p>
     <p>
       Kobo e-readers turn their Wi-Fi off after a short period to conserve
