@@ -36,6 +36,11 @@ input {
   padding: 0;
   margin: 0;
 }
+input[type="checkbox"] {
+  height: 26px;
+  width: 26px;
+}
+
 select {
   font-size: 24px;
 }

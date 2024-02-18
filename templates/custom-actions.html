@@ -12,34 +12,79 @@ SPDX-License-Identifier: GPL-3.0-only
   </head>
   <body style="margin: 0; padding: 0">
     <br />
-    <form
-      action="/cgi-bin/record-action.cgi"
-      method="GET"
-      accept-charset="utf-8"
-    >
-      <label for="display-name">Display Name:</label><br />
-      <input type="text" id="display-name" name="display-name" required /><br />
-      <label for="duration">Capture Duration (Seconds):</label><br />
+    <form class="action-form" id="record-action-form">
+      <label for="name">Display Name:</label><br />
+      <input type="text" id="name" name="name" required /><br />
+      <label for="sort-value">Sort Value:</label><br />
       <input
-        type="number"
-        id="duration"
-        name="duration"
-        value="5"
-        min="1"
-        required
+        type="text"
+        id="sort-value"
+        name="sort_value"
+        placeholder="Optional"
       /><br />
-      <label for="sort-value">(Optional) Sort Value:</label><br />
-      <input type="text" id="sort-value" name="sort-value" /><br />
-      <label for="path-segment">(Optional) URL Path Segment:</label><br />
-      <input type="text" id="path-segment" name="path-segment" /><br />
-      <label for="keyboard-shortcut">(Optional) Keyboard Shortcut:</label><br />
+      <label for="path_segment">URL Path Segment:</label><br />
+      <input
+        type="text"
+        id="path-segment"
+        name="path_segment"
+        placeholder="Optional"
+      /><br />
+      <label for="keyboard_shortcut">Keyboard Shortcut:</label><br />
       <input
         type="text"
         id="keyboard-shortcut"
-        name="keyboard-shortcut"
+        name="keyboard_shortcut"
+        placeholder="Optional"
       /><br />
+      <details>
+        <summary>Advanced Options</summary>
+        <label for="no-input-timeout">No Input Timeout (Milliseconds):</label
+        ><br />
+        <input
+          type="number"
+          id="no-input-timeout"
+          name="no_input_timeout"
+          class="input-number"
+          value="5000"
+          min="1"
+          required
+        /><br />
+        <label for="last-event-timeout"
+          >Last Input Timeout (Milliseconds):</label
+        ><br />
+        <input
+          type="number"
+          id="last-event-timeout"
+          name="last_event_timeout"
+          class="input-number"
+          value="4000"
+          min="1"
+          required
+        /><br />
+        <label for="optimize-input">Optimize Input</label><br />
+        <input
+          type="checkbox"
+          id="optimize-input"
+          name="optimize"
+          checked
+        /><br />
+        <label for="only-check-touch">Only check touchscreen</label><br />
+        <input
+          type="checkbox"
+          id="only-check-touch"
+          name="only_check_touch"
+          checked
+        /><br />
+      </details>
       <p>
-        <button id="create-action" class="records-input">Create Action</button>
+        <button
+          type="button"
+          name="create-action"
+          id="create-action"
+          class="records-input"
+        >
+          Create Action
+        </button>
       </p>
     </form>
     <p>
@@ -64,7 +109,7 @@ SPDX-License-Identifier: GPL-3.0-only
       >
     </p>
     <p>
-      <a href="/cgi-bin/remote-control.cgi"
+      <a href="/remote-control"
         ><button type="button" id="remote-control">Remote Control</button></a
       >
     </p>
@@ -88,13 +133,5 @@ SPDX-License-Identifier: GPL-3.0-only
   <script type="module">
     import { setup, alertRecording } from "/js/alert-recording.js";
     setup();
-    var button = document.getElementById("create-action");
-    button.onclick = function () {
-      var name = document.getElementById("display-name").value;
-      if (name) {
-        var timeleft = document.getElementById("duration").value;
-        alertRecording(timeleft, button.id);
-      }
-    };
   </script>
 </html>
