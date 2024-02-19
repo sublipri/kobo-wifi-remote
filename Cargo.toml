@@ -1,7 +1,13 @@
 [package]
 name = "kobo-wifi-remote"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
+authors = ["sublipri"]
+license = "GPL-3.0-only"
+description = "A web-based remote control for Kobo e-readers"
+repository = "https://github.com/sublipri/kobo-wifi-remote"
+keywords = ["e-reader", "kobo"]
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
