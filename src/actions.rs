@@ -9,7 +9,7 @@ use evdev_rs::enums::EventCode::EV_KEY;
 use evdev_rs::enums::EV_KEY::BTN_TOUCH;
 use evdev_rs::util::event_code_to_int;
 use evdev_rs::{DeviceWrapper, InputEvent, TimeVal};
-use framebuffer::Framebuffer;
+use fbink_rs::{CanonicalRotation, FbInk};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationMicroSeconds, DurationMilliSeconds};
 use slug::slugify;
@@ -132,24 +132,21 @@ pub struct Action {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ActionRecording {
-    pub rotation: usize,
+    pub rotation: CanonicalRotation,
     pub events: Vec<ActionEvent>,
     pub dev_path: PathBuf,
     pub is_optimized: bool,
 }
 
-fn current_rotation() -> usize {
-    let Ok(framebuffer) = Framebuffer::new("/dev/fb0") else {
-        return 0;
-    };
-    // Always returns 0 on some Kobo models. TODO: use FBInk instead
-    framebuffer.var_screen_info.rotate as usize
+fn current_rotation() -> Result<CanonicalRotation> {
+    let fbink = FbInk::with_defaults()?;
+    Ok(fbink.state().canonical_rotation())
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RecordActionResponse {
     pub name: String,
-    pub rotation: usize,
+    pub rotation: String,
     pub was_optimized: bool,
     pub device: String,
 }
@@ -173,7 +170,7 @@ impl Action {
 
     pub fn record(&mut self, opts: &RecordActionOptions) -> Result<RecordActionResponse> {
         let devices = get_input_devices()?;
-        let rotation = current_rotation();
+        let rotation = current_rotation()?;
 
         let devices_with_events = if opts.only_check_touch {
             read_input(
@@ -214,7 +211,7 @@ impl Action {
 
         let response = RecordActionResponse {
             name: self.name.clone(),
-            rotation,
+            rotation: rotation.to_string(),
             was_optimized: is_optimized,
             device: format!("{}", &device),
         };
@@ -225,14 +222,14 @@ impl Action {
             rotation,
             is_optimized,
         };
-        self.recordings[rotation] = Some(recording);
+        self.recordings[rotation as usize] = Some(recording);
 
         Ok(response)
     }
 
     pub fn play(&self) -> Result<()> {
-        let rotation = current_rotation();
-        let Some(ref recording) = self.recordings[rotation] else {
+        let rotation = current_rotation()?;
+        let Some(ref recording) = self.recordings[rotation as usize] else {
             return Err(anyhow!(
                 "No recording for {} in rotation {}",
                 self.name,
