@@ -1,15 +1,18 @@
-use std::{collections::HashMap, path::PathBuf, thread};
+use crate::{
+    actions::{ActionManager, ActionMsg, RecordActionOptions},
+    errors::AppError,
+};
 
-use actions::ActionMsg;
+use std::{path::PathBuf, thread};
+
 use anyhow::Result;
 use axum::{
     extract::{Path as AxumPath, Request, State},
-    http::{header, HeaderMap, HeaderValue},
+    http::{header, HeaderValue},
     response::IntoResponse,
     routing::{get, post},
     Json, Router, ServiceExt,
 };
-use templates::RemoteControl;
 use tokio::sync::{mpsc, oneshot};
 use tower::Layer;
 use tower_http::{
@@ -18,15 +21,10 @@ use tower_http::{
 use tracing::debug;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
-use crate::{
-    actions::{ActionManager, RecordActionOptions},
-    errors::AppError,
-};
-
 mod actions;
 mod errors;
+mod frontend;
 mod input;
-mod templates;
 
 pub struct ConfigOptions {
     pub action_file: PathBuf,
@@ -61,18 +59,6 @@ async fn main() -> Result<()> {
     let state = AppState { tx };
     thread::spawn(move || manager.manage());
     let app = Router::new()
-        .route("/", get(|| async { templates::Index {} }))
-        .route("/setup", get(|| async { templates::Setup {} }))
-        .route("/page-turner", get(|| async { templates::PageTurner {} }))
-        .route(
-            "/troubleshooting",
-            get(|| async { templates::Troubleshooting {} }),
-        )
-        .route(
-            "/custom-actions",
-            get(|| async { templates::CustomActions {} }),
-        )
-        .route("/remote-control", get(remote_control))
         // Now that we're not restricted by the BusyBox HTTP server we'll switch to an
         // /actions/:path_segment endpoint, but keep /left and /right for compatibility with KoboPageTurner
         // and anything that users integrated with the original version
@@ -81,10 +67,7 @@ async fn main() -> Result<()> {
         .route("/actions/:path_segment", get(play_action_handler))
         .route("/left", get(prev_page))
         .route("/right", get(next_page))
-        .route("/styles/main.css", get(main_css))
-        .route("/styles/remote.css", get(remote_css))
-        .route("/js/record-action.js", get(record_action_js))
-        .route("/js/colored-buttons.js", get(colored_buttons))
+        .merge(frontend::routes())
         .with_state(state);
 
     let app = NormalizePathLayer::trim_trailing_slash().layer(app);
@@ -100,60 +83,12 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn main_css() -> impl IntoResponse {
-    let mut headers = HeaderMap::new();
-    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/css"));
-    (headers, include_str!("www/styles/main.css"))
-}
-
-async fn remote_css() -> impl IntoResponse {
-    let mut headers = HeaderMap::new();
-    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/css"));
-    (headers, include_str!("www/styles/remote.css"))
-}
-
-async fn record_action_js() -> impl IntoResponse {
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        header::CONTENT_TYPE,
-        HeaderValue::from_static("text/javascript"),
-    );
-    (headers, include_str!("www/js/record-action.js"))
-}
-
-async fn colored_buttons() -> impl IntoResponse {
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        header::CONTENT_TYPE,
-        HeaderValue::from_static("text/javascript"),
-    );
-    (headers, include_str!("www/js/colored-buttons.js"))
-}
-
 async fn next_page(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
     Ok(play_action("next-page".into(), &state).await?)
 }
 
 async fn prev_page(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
     Ok(play_action("prev-page".into(), &state).await?)
-}
-
-async fn remote_control(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
-    let (tx, rx) = oneshot::channel();
-    state.tx.send(ActionMsg::List { resp: tx }).await?;
-    let actions = rx.await?;
-    dbg!(&actions);
-    let mut shortcuts = HashMap::new();
-    for a in &actions {
-        if let Some(shortcut) = a.keyboard_shortcut {
-            shortcuts.insert(shortcut, a.path_segment.clone());
-        }
-    }
-    let shortcuts_json = serde_json::to_string_pretty(&shortcuts)?;
-    Ok(RemoteControl {
-        actions,
-        shortcuts_json,
-    })
 }
 
 async fn get_actions(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
