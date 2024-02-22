@@ -25,6 +25,7 @@ mod actions;
 mod errors;
 mod frontend;
 mod input;
+mod kobo_config;
 
 pub struct ConfigOptions {
     pub action_file: PathBuf,
@@ -68,6 +69,7 @@ async fn main() -> Result<()> {
         .route("/left", get(prev_page))
         .route("/right", get(next_page))
         .merge(frontend::routes())
+        .merge(kobo_config::routes())
         .with_state(state);
 
     let app = NormalizePathLayer::trim_trailing_slash().layer(app);
