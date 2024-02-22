@@ -789,6 +789,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "indoc"
+version = "2.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e186cfbae8084e513daff4240b4797e342f988cecda4fb6c939150f96315fd8"
+
+[[package]]
+name = "ini-roundtrip"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31d91813e10dc41f040ed0a8b157ce521fa2c0bc176391e1edf43290ce3ff229"
+dependencies = [
+ "cfg-if",
+]
+
+[[package]]
 name = "itertools"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -841,6 +856,8 @@ dependencies = [
  "chrono",
  "evdev-rs",
  "fbink-rs",
+ "indoc",
+ "ini-roundtrip",
  "keyboard-types",
  "nix",
  "serde",
