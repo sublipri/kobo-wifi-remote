@@ -1,3 +1,5 @@
+use super::input::{get_input_devices, optimize_events, read_input};
+
 use std::collections::BTreeMap;
 use std::fs::{self, File};
 use std::io::Write;
@@ -15,8 +17,6 @@ use serde_with::{serde_as, DurationMicroSeconds, DurationMilliSeconds};
 use slug::slugify;
 use tokio::sync::{mpsc, oneshot};
 use tracing::{debug, warn};
-
-use crate::input::{get_input_devices, optimize_events, read_input};
 
 pub struct ActionManager {
     pub path: PathBuf,
