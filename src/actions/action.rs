@@ -48,19 +48,30 @@ impl ActionManager {
 
     fn record(&mut self, opts: RecordActionOptions) -> Result<RecordActionResponse> {
         let path_segment = opts.path_segment.clone().unwrap_or(slugify(&opts.name));
-        if let Some(ref mut action) = self.actions.get_mut(&path_segment) {
+        let response = if let Some(ref mut action) = self.actions.get_mut(&path_segment) {
+            action.record(&opts)?
+        } else {
+            let mut action = Action::new(&opts)?;
             let response = action.record(&opts)?;
-            return Ok(response);
-        }
-
-        let mut action = Action::new(&opts)?;
-        let response = action.record(&opts)?;
-        self.actions.insert(path_segment, action);
-        let bytes = bincode::serialize(&self.actions).context("Failed to serialize actions")?;
-        debug!("Writing actions to {}", &self.path.display());
-        fs::write(&self.path, bytes)
-            .with_context(|| format!("Failed to write actions to {}", self.path.display()))?;
+            self.actions.insert(path_segment, action);
+            response
+        };
+        self.write()?;
         Ok(response)
+    }
+
+    fn write(&self) -> Result<()> {
+        let bytes = bincode::serialize(&self.actions).context("Failed to serialize actions")?;
+        if self.path.exists() {
+            fs::copy(&self.path, self.path.with_extension("bin.bkp"))
+                .context("Failed to backup actions file")?;
+        }
+        let tmp = self.path.with_extension("tmp");
+        debug!("Writing actions to {}", tmp.display());
+        fs::write(&tmp, bytes)
+            .with_context(|| format!("Failed to write actions to {}", tmp.display()))?;
+        fs::rename(&tmp, &self.path).context("Failed to rename temporary actions file")?;
+        Ok(())
     }
 
     fn play(&mut self, path_segment: &str) -> Result<()> {
