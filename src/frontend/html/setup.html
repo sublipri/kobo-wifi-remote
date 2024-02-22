@@ -80,14 +80,12 @@ SPDX-License-Identifier: GPL-3.0-only
     </p>
     <p>
       Kobo e-readers turn their Wi-Fi off after a short period to conserve
-      battery life. To prevent this, enable the developer setting 'ForceWifiOn'.
+      battery life. To prevent this, press the button below.
     </p>
     <p>
-      <a href="/cgi-bin/developer-settings.cgi"
-        ><button type="button" id="developer-settings">
-          Developer Settings
-        </button></a
-      >
+      <button type="button" id="force-wifi-on" onclick="forceWifi()">
+        Force Wi-Fi On
+      </button>
     </p>
     <p>
       <a href="javascript:history.back()"
@@ -98,5 +96,36 @@ SPDX-License-Identifier: GPL-3.0-only
   <script type="module">
     import { setup } from "/js/record-action.js";
     setup();
+  </script>
+  <script>
+    // TODO: Make this generic and add frontend for editing other settings
+    async function forceWifi() {
+      const request = {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([
+          {
+            section: "DeveloperSettings",
+            key: "ForceWifiOn",
+            value: "true",
+          },
+        ]),
+      };
+      const response = await fetch("/kobo-config", request);
+      const result = document.getElementById("result-modal");
+      const p = result.querySelector("p");
+      if (response.ok) {
+        p.innerHTML = "Set ForceWifiOn to true";
+        result.style.display = "block";
+        await new Promise((r) => setTimeout(r, 1500));
+        result.style.display = "none";
+      } else {
+        p.innerHTML = await response.text();
+        result.style.display = "block";
+      }
+    }
   </script>
 </html>
