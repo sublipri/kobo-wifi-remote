@@ -192,14 +192,14 @@ impl Action {
                 opts.poll_wait,
                 opts.no_input_timeout,
                 opts.new_event_timeout,
-            )
+            )?
         } else {
             read_input(
                 devices.into_iter(),
                 opts.poll_wait,
                 opts.no_input_timeout,
                 opts.new_event_timeout,
-            )
+            )?
         };
 
         if devices_with_events.is_empty() {
