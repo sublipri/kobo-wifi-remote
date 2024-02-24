@@ -205,12 +205,18 @@ impl Action {
         if devices_with_events.is_empty() {
             return Err(anyhow!("No input detected"));
         }
-        for (d, _) in &devices_with_events {
-            debug!("Input detected on {d}");
+        for (d, e) in &devices_with_events {
+            debug!("Input detected on {d} ({} events)", e.len());
         }
 
         let (device, mut events) = if devices_with_events.len() > 1 {
-            todo!()
+            // TODO: It's unlikely that there will ever be multiple devices with events detected,
+            // but the ideal way to handle this would be to enable the user to select which device
+            // they intended to record
+            devices_with_events
+                .into_iter()
+                .max_by_key(|(_d, e)| e.len())
+                .unwrap()
         } else {
             devices_with_events.into_iter().next().unwrap()
         };
