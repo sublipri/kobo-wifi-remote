@@ -1,6 +1,4 @@
-use crate::actions::{ActionManager, ActionMsg};
-
-use std::{path::PathBuf, thread};
+use kobo_wifi_remote::server;
 
 use anyhow::Result;
 use axum::{
@@ -17,24 +15,11 @@ use tracing::debug;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 mod actions;
+mod config;
 mod errors;
 mod frontend;
 mod kobo_config;
 mod screenshot;
-
-pub struct ConfigOptions {
-    pub action_file: PathBuf,
-    pub port: u32,
-}
-
-impl Default for ConfigOptions {
-    fn default() -> Self {
-        Self {
-            action_file: "/tmp/actions.bin".into(),
-            port: 8000,
-        }
-    }
-}
 
 #[derive(Clone)]
 pub struct AppState {
@@ -51,7 +36,7 @@ async fn main() -> Result<()> {
 
     let config = ConfigOptions::default();
     let (tx, rx) = mpsc::channel(32);
-    let mut manager = ActionManager::from_path(config.action_file.clone(), rx)?;
+    let mut manager = ActionManager::from_path(config.action_file(), rx)?;
     let state = AppState { tx };
     thread::spawn(move || manager.manage());
     let app = Router::new()
