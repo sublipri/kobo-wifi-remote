@@ -104,7 +104,8 @@ impl ActionManager {
                     }
                 }
                 Some(ActionMsg::List { resp }) => {
-                    let actions = self.actions.values().cloned().collect();
+                    let mut actions: Vec<Action> = self.actions.values().cloned().collect();
+                    actions.sort_by(|a, b| a.sort_value.partial_cmp(&b.sort_value).unwrap());
                     if resp.send(actions).is_err() {
                         warn!("Unable to send actions list. Receiver dropped")
                     }
