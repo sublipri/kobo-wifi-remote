@@ -4,14 +4,14 @@ use std::path::PathBuf;
 use std::sync::mpsc::{channel, Sender};
 use std::thread::{self, sleep};
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use chrono::{Duration, Utc};
 use evdev_rs::enums::EventCode::{EV_ABS, EV_KEY};
 use evdev_rs::enums::EV_ABS::*;
 use evdev_rs::enums::EV_KEY::BTN_TOUCH;
 use evdev_rs::{enums::EventType, Device, DeviceWrapper, InputEvent, ReadFlag, ReadStatus};
 use nix::libc::suseconds_t;
-use tracing::debug;
+use tracing::{debug, warn};
 
 pub fn get_input_devices() -> Result<Vec<InputDevice>> {
     // /dev/input/eventX paths aren't guaranteed to be stable, so use by-path if possible.
@@ -90,22 +90,31 @@ fn read_events(
             .unwrap();
         match status {
             ReadStatus::Success => (),
-            ReadStatus::Sync => todo!(),
+            ReadStatus::Sync => {
+                // Not sure if it's worth trying to handle this if it occurs. Never happened in
+                // testing and unsure of the best approach, so for now just return an error.
+                // https://docs.rs/evdev-rs/0.6.1/evdev_rs/struct.Device.html#method.next_event
+                if tx.send(ReadEventsMsg::Error).is_err() {
+                    warn!("Failed to send ReadEventsMsg::Error to receiver");
+                }
+            }
         }
         events.push(event);
         last_event_time = Some(Utc::now());
     }
     if events.is_empty() {
-        tx.send(ReadEventsMsg::NoEvents).unwrap();
-    } else {
-        tx.send(ReadEventsMsg::Events((device, events))).unwrap();
+        if tx.send(ReadEventsMsg::NoEvents).is_err() {
+            warn!("Failed to send ReadEventsMsg::NoEvents to receiver");
+        }
+    } else if tx.send(ReadEventsMsg::Events((device, events))).is_err() {
+        warn!("Failed to send ReadEventsMsg::Events to receiver");
     }
 }
 
 enum ReadEventsMsg {
     Events((InputDevice, Vec<InputEvent>)),
     NoEvents,
-    // Error,
+    Error,
 }
 
 pub fn read_input(
@@ -113,7 +122,7 @@ pub fn read_input(
     poll_wait: Duration,
     no_input_timeout: Duration,
     new_event_timeout: Duration,
-) -> Vec<(InputDevice, Vec<InputEvent>)> {
+) -> Result<Vec<(InputDevice, Vec<InputEvent>)>> {
     let mut devices_with_events = Vec::new();
     let (tx, rx) = channel();
     let mut len = 0;
@@ -122,12 +131,16 @@ pub fn read_input(
         let dtx = tx.clone();
         thread::spawn(move || read_events(d, dtx, poll_wait, no_input_timeout, new_event_timeout));
     }
+    let err = anyhow!("An error occured while reading input. Please try again.");
     for _ in 0..len {
-        if let Ok(ReadEventsMsg::Events(events)) = rx.recv() {
-            devices_with_events.push(events);
+        match rx.recv() {
+            Ok(ReadEventsMsg::Events(events)) => devices_with_events.push(events),
+            Ok(ReadEventsMsg::NoEvents) => continue,
+            Ok(ReadEventsMsg::Error) => return Err(err),
+            Err(_) => return Err(err),
         }
     }
-    devices_with_events
+    Ok(devices_with_events)
 }
 
 #[derive(Debug)]
