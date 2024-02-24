@@ -1,7 +1,6 @@
-use kobo_wifi_remote::server;
+use kobo_wifi_remote::cli::cli;
 
 use anyhow::Result;
-use tracing::debug;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 fn main() -> Result<()> {
@@ -9,8 +8,6 @@ fn main() -> Result<()> {
         .with(fmt::layer())
         .with(EnvFilter::from_default_env())
         .init();
-    debug!("Starting wifiremote");
-
-    server::serve()?;
+    cli()?;
     Ok(())
 }

@@ -1,6 +1,6 @@
 use crate::{
     actions::{ActionManager, ActionMsg},
-    config::ConfigOptions,
+    config::Config,
 };
 
 use std::thread;
@@ -16,13 +16,16 @@ use tower::Layer;
 use tower_http::{
     normalize_path::NormalizePathLayer, set_header::response::SetResponseHeaderLayer,
 };
+use tracing::info;
 
 #[derive(Clone)]
 pub struct AppState {
     pub tx: mpsc::Sender<ActionMsg>,
 }
+
+#[tokio::main(flavor = "current_thread")]
 pub async fn serve() -> Result<()> {
-    let config = ConfigOptions::default();
+    let config = Config::default();
     let (tx, rx) = mpsc::channel(32);
     let mut manager = ActionManager::from_path(config.action_file(), rx)?;
     let state = AppState { tx };
@@ -43,6 +46,7 @@ pub async fn serve() -> Result<()> {
     let app = ServiceExt::<Request>::into_make_service(app);
     let host = format!("0.0.0.0:{}", config.port);
     let listener = tokio::net::TcpListener::bind(host).await.unwrap();
+    info!("Starting server on port {}", config.port);
     axum::serve(listener, app).await?;
     Ok(())
 }
