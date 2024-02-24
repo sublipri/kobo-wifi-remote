@@ -1,5 +1,4 @@
-use crate::errors::AppError;
-use crate::AppState;
+use crate::{errors::AppError, server::AppState};
 
 use axum::{
     http::{header, HeaderMap, HeaderValue},

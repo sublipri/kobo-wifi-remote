@@ -1,5 +1,5 @@
 pub use self::config::{KoboConfigFile, KoboConfigOptions, KoboConfigSetting};
-use crate::{errors::AppError, AppState};
+use crate::{errors::AppError, server::AppState};
 
 use axum::{
     response::IntoResponse,
