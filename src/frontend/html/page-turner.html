@@ -41,7 +41,6 @@ SPDX-License-Identifier: GPL-3.0-only
         id="prev-page"
         title="Previous Page (Shortcut: ArrowLeft or KeyA)"
         style="background-color: #5783db"
-        onclick="fetch('/left/')"
         type="button"
       >
         Prev
@@ -51,16 +50,33 @@ SPDX-License-Identifier: GPL-3.0-only
         id="next-page"
         title="Next Page (Shortcut: ArrowRight or KeyD)"
         style="background-color: #33b249"
-        onclick="fetch('/right/')"
         type="button"
       >
         Next
       </button>
     </div>
+    <div id="result-modal" class="modal">
+      <div class="modal-content">
+        <span id="result-close-modal" class="close">&times;</span>
+        <p></p>
+      </div>
+    </div>
   </body>
   <script>
     next_btn = document.getElementById("next-page");
     prev_btn = document.getElementById("prev-page");
+    const close = document.getElementById("result-close-modal");
+    next_btn.onclick = async () => {
+      await playAction("next-page");
+    };
+    prev_btn.onclick = async () => {
+      await playAction("prev-page");
+    };
+    close.onclick = function () {
+      const modal = document.getElementById("result-modal");
+      modal.style.display = "none";
+    };
+
     window.addEventListener(
       "keydown",
       (event) => {
@@ -75,10 +91,23 @@ SPDX-License-Identifier: GPL-3.0-only
           case "KeyA":
             prev_btn.click();
             break;
+          case "Escape":
+            close.click();
+            break;
         }
       },
       true,
     );
+
+    async function playAction(path_segment) {
+      const response = await fetch(`/actions/${path_segment}`);
+      if (!response.ok) {
+        const result = document.getElementById("result-modal");
+        const p = result.querySelector("p");
+        p.innerHTML = await response.text();
+        result.style.display = "block";
+      }
+    }
   </script>
   <script src="/js/colored-buttons.js"></script>
 </html>
