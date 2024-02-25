@@ -22,13 +22,6 @@ SPDX-License-Identifier: GPL-3.0-only
         name="sort_value"
         placeholder="Optional"
       /><br />
-      <label for="path_segment">URL Path Segment:</label><br />
-      <input
-        type="text"
-        id="path-segment"
-        name="path_segment"
-        placeholder="Optional"
-      /><br />
       <label for="keyboard_shortcut">Keyboard Shortcut:</label><br />
       <input
         type="text"
@@ -38,6 +31,13 @@ SPDX-License-Identifier: GPL-3.0-only
       /><br />
       <details>
         <summary>Advanced Options</summary>
+        <label for="path_segment">URL Path Segment:</label><br />
+        <input
+          type="text"
+          id="path-segment"
+          name="path_segment"
+          placeholder="Optional"
+        /><br />
         <label for="no-input-timeout">No Input Timeout (Milliseconds):</label
         ><br />
         <input
@@ -89,17 +89,16 @@ SPDX-License-Identifier: GPL-3.0-only
     </form>
     <p>
       Custom actions will appear on the remote control once recorded. Unicode
-      characters should work, so you may put an emoji as the display name to act
-      as an icon. It is recommended to use alphanumeric characters for the sort
-      value and path segment.
+      characters work, so you may put an emoji as the display name to act as an
+      icon.
     </p>
     <p>
       The keyboard shortcut field requires an
       <a
         href="https://developer.mozilla.org/en-US/docs/web/api/ui_events/keyboard_event_code_values"
         >event code value</a
-      >. If using a computer with JavaScript enabled, the input box will update
-      with the code value when you press a key. This value represents the
+      >. The input box should update with the code value when you press a
+      key<noscript>(requires JavaScript)</noscript>. This value represents the
       physical location on a keyboard, so for non-QWERTY layouts it might differ
       from the character pressed.
     </p>
