@@ -18,7 +18,7 @@ impl Default for Config {
             udev_dir: "/etc/udev/rules.d".into(),
             user_dir: "/mnt/onboard/.adds/wifiremote".into(),
             pid_file: "/var/run/wifiremote.pid".into(),
-            port: 8000,
+            port: 80,
         }
     }
 }
