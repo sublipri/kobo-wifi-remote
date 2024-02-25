@@ -2,6 +2,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use tracing::error;
 
 // Make our own error that wraps `anyhow::Error`.
 pub struct AppError(anyhow::Error);
@@ -11,7 +12,7 @@ impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Something went wrong: {}", self.0),
+            format!("Error: {}", self.0),
         )
             .into_response()
     }
@@ -21,9 +22,10 @@ impl IntoResponse for AppError {
 // `Result<_, AppError>`. That way you don't need to do that manually.
 impl<E> From<E> for AppError
 where
-    E: Into<anyhow::Error>,
+    E: Into<anyhow::Error> + std::fmt::Display,
 {
     fn from(err: E) -> Self {
+        error!("{}", err);
         Self(err.into())
     }
 }
