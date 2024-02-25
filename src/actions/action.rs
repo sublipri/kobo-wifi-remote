@@ -88,6 +88,15 @@ impl ActionManager {
         Ok(())
     }
 
+    fn delete(&mut self, path_segment: &str) -> Result<()> {
+        if self.actions.remove(path_segment).is_some() {
+            self.write()?;
+            Ok(())
+        } else {
+            Err(anyhow!("No action exists for {path_segment}"))
+        }
+    }
+
     pub fn manage(&mut self) {
         loop {
             match self.rx.blocking_recv() {
@@ -110,6 +119,12 @@ impl ActionManager {
                         warn!("Unable to send actions list. Receiver dropped")
                     }
                 }
+                Some(ActionMsg::Delete { path_segment, resp }) => {
+                    let result = self.delete(&path_segment);
+                    if resp.send(result).is_err() {
+                        warn!("Unable to send Delete result. Receiver dropped")
+                    }
+                }
                 None => break,
             }
         }
@@ -127,6 +142,10 @@ pub enum ActionMsg {
     },
     List {
         resp: oneshot::Sender<Vec<Action>>,
+    },
+    Delete {
+        path_segment: String,
+        resp: oneshot::Sender<Result<()>>,
     },
 }
 
