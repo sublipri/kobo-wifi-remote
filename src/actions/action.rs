@@ -274,7 +274,7 @@ impl Action {
         let rotation = current_rotation()?;
         let Some(ref recording) = self.recordings[rotation as usize] else {
             return Err(anyhow!(
-                "No recording for {} in rotation {}",
+                "No recording for {} in {} rotation",
                 self.name,
                 rotation
             ));
