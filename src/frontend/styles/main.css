@@ -66,6 +66,7 @@ select {
   width: 80%;
   height: 20%;
   font-size: 24px;
+  overflow-y: auto;
 }
 .close {
   color: #aaa;
