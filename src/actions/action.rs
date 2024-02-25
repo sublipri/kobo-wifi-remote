@@ -177,6 +177,9 @@ fn current_rotation() -> Result<CanonicalRotation> {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RecordActionResponse {
     pub name: String,
+    pub path_segment: String,
+    pub sort_value: String,
+    pub keyboard_shortcut: Option<keyboard_types::Code>,
     pub rotation: String,
     pub was_optimized: bool,
     pub device: String,
@@ -248,6 +251,9 @@ impl Action {
 
         let response = RecordActionResponse {
             name: self.name.clone(),
+            path_segment: self.path_segment.clone(),
+            sort_value: self.sort_value.clone(),
+            keyboard_shortcut: self.keyboard_shortcut,
             rotation: rotation.to_string(),
             was_optimized: is_optimized,
             device: format!("{}", &device),
