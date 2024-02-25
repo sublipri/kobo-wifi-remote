@@ -29,3 +29,8 @@ pub struct RemoteControl {
     pub shortcuts_json: String,
 }
 
+#[derive(Template)]
+#[template(path = "manage-actions.html")]
+pub struct ManageActions {
+    pub actions: Vec<Action>,
+}

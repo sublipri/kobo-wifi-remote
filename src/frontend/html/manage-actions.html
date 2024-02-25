@@ -1,0 +1,64 @@
+<!--
+SPDX-FileCopyrightText: 2023 sublipri <sublipri@proton.me>
+SPDX-License-Identifier: GPL-3.0-only
+-->
+<!doctype html>
+<html>
+  <head>
+    <title>Kobo Wi-Fi Remote</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8" />
+    <link href="/styles/main.css" rel="stylesheet" />
+  </head>
+  <body style="margin: 0; padding: 0">
+    <p></p>
+    <form id="delete-action">
+      <select form="delete-action" name="path-segment" id="select-action">
+        <option value="">--Please select an action--</option>
+        {% for action in actions -%}
+        <option value="{{action.path_segment}}">{{-action.name}}</option>
+        {% endfor %}
+      </select>
+      <p>
+        <button type="button" onclick="deleteAction()">Delete Action</button>
+      </p>
+    </form>
+    <div id="result-modal" class="modal">
+      <div class="modal-content">
+        <span id="result-close-modal" class="close">&times;</span>
+        <p></p>
+      </div>
+    </div>
+    <p>
+      <a href="javascript:history.back()"
+        ><button type="button" id="go-back">Go Back</button></a
+      >
+    </p>
+  </body>
+  <script>
+    async function deleteAction() {
+      const selection = document.getElementById("select-action");
+      const path_segment = selection.value;
+
+      if (path_segment) {
+        const response = await fetch(`/actions/${path_segment}`, {
+          method: "DELETE",
+        });
+        const result = document.getElementById("result-modal");
+        const p = result.querySelector("p");
+        if (response.ok) {
+          p.innerHTML = `Deleted ${path_segment}`;
+          result.style.display = "block";
+          await new Promise((r) => setTimeout(r, 1000));
+          result.style.display = "none";
+          location.reload();
+        } else {
+          p.innerHTML = await response.text();
+          result.style.display = "block";
+        }
+      } else {
+        console.log("Please select an action");
+      }
+    }
+  </script>
+</html>

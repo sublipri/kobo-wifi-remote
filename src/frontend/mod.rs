@@ -9,7 +9,6 @@ use axum::{
     routing::get,
     Router,
 };
-use templates::RemoteControl;
 use tokio::sync::oneshot;
 
 mod templates;
@@ -27,6 +26,7 @@ pub fn routes() -> Router<AppState> {
             "/custom-actions",
             get(|| async { templates::CustomActions {} }),
         )
+        .route("/manage-actions", get(manage_actions))
         .route("/remote-control", get(remote_control))
         .route("/styles/main.css", get(main_css))
         .route("/styles/remote.css", get(remote_css))
@@ -75,8 +75,15 @@ async fn remote_control(State(state): State<AppState>) -> Result<impl IntoRespon
         }
     }
     let shortcuts_json = serde_json::to_string_pretty(&shortcuts)?;
-    Ok(RemoteControl {
+    Ok(templates::RemoteControl {
         actions,
         shortcuts_json,
     })
+}
+
+async fn manage_actions(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let (tx, rx) = oneshot::channel();
+    state.tx.send(ActionMsg::List { resp: tx }).await?;
+    let actions = rx.await?;
+    Ok(templates::ManageActions { actions })
 }
