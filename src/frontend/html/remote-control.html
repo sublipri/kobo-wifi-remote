@@ -29,12 +29,18 @@ SPDX-License-Identifier: GPL-3.0-only
         type="button"
         id="btn-{{action.path_segment}}"
         style="background-color: {{color}}"
-        title='Next (Shortcut: {{action.shortcut_name()}})'
-        onclick='fetch("/actions/{{action.path_segment}}")'
+        title="Next (Shortcut: {{action.shortcut_name()}})"
+        onclick='playAction("{{action.path_segment}}")'
       >
         {{-action.name}}
       </button>
       {% endfor -%}
+    </div>
+    <div id="result-modal" class="modal">
+      <div class="modal-content">
+        <span id="result-close-modal" class="close">&times;</span>
+        <p></p>
+      </div>
     </div>
   </body>
   <script id="shortcuts-json" type="application/json">
@@ -59,6 +65,24 @@ SPDX-License-Identifier: GPL-3.0-only
       },
       true,
     );
+
+    const close = document.getElementById("result-close-modal");
+    close.onclick = function () {
+      const modal = document.getElementById("result-modal");
+      modal.style.display = "none";
+    };
+
+    async function playAction(path_segment) {
+      const response = await fetch(`/actions/${path_segment}`);
+      if (!response.ok) {
+        const result = document.getElementById("result-modal");
+        const p = result.querySelector("p");
+        p.innerHTML = await response.text();
+        result.style.display = "block";
+        await new Promise((r) => setTimeout(r, 3000));
+        result.style.display = "none";
+      }
+    }
   </script>
   <script src="/js/colored-buttons.js"></script>
 </html>
