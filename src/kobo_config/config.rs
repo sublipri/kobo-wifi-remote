@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, fs, path::PathBuf};
 
@@ -57,13 +57,16 @@ impl KoboConfigFile {
 
     /// Write the contents to disk
     pub fn write(&self) -> Result<()> {
+        let p = self.opts.path.display();
         fs::copy(
             &self.opts.path,
             self.opts.path.with_extension("conf.wrfbkp"),
-        )?;
+        )
+        .with_context(|| format!("Failed to backup {}", p))?;
         let tmp = self.opts.path.with_extension("conf.wfrtmp");
-        fs::write(&tmp, &self.contents)?;
-        fs::rename(&tmp, &self.opts.path)?;
+        fs::write(&tmp, &self.contents)
+            .with_context(|| format!("Failed to write {}", tmp.display()))?;
+        fs::rename(&tmp, &self.opts.path).with_context(|| format!("Failed to rename {}", p))?;
         Ok(())
     }
 
@@ -128,7 +131,7 @@ impl KoboConfigFile {
         section: &str,
         key_to_set: &str,
         new_val: Option<&str>,
-    ) -> Result<()> {
+    ) -> Result<bool> {
         if !self.is_whitelisted(section, key_to_set) {
             return Err(anyhow!("Changing {key_to_set} isn't allowed"));
         }
@@ -160,6 +163,10 @@ impl KoboConfigFile {
                         }
                         updated.push_str(&format!("{key}={new_val}\n"));
                         let (old_val, path) = (val.unwrap_or_default(), self.opts.path.display());
+                        if old_val == new_val {
+                            debug!("{key} is already set to {new_val}");
+                            return Ok(false);
+                        }
                         debug!("Changing {key} in {path} from {old_val} to {new_val}",);
                         was_changed = true;
                     } else {
@@ -194,11 +201,14 @@ impl KoboConfigFile {
         if !was_changed {
             if let Some(new_val) = new_val {
                 updated.push_str(&format!("\n[{section}]\n"));
-                updated.push_str(&format!("{key_to_set}={new_val}\n"))
+                updated.push_str(&format!("{key_to_set}={new_val}\n"));
+                was_changed = true;
             }
         }
-        self.contents = updated;
-        Ok(())
+        if was_changed {
+            self.contents = updated;
+        }
+        Ok(was_changed)
     }
 
     /// Ensure the new value is the same type as the old value
@@ -306,6 +316,27 @@ mod tests {
             .set_value("DeveloperSettings", "ForceWifiOn", Some("false"))
             .unwrap();
         assert_eq!(&config.contents, expected);
+    }
+
+    #[test]
+    fn set_already_set() {
+        let cfg = indoc! {"
+            [DeveloperSettings]
+            ForceWifiOn=true
+
+            [DialogSettings]
+            ReleaseNotesShown=true
+            ReturningReaderDialogShown=true
+        "};
+        let mut config = KoboConfigFile {
+            contents: cfg.to_string(),
+            opts: KoboConfigOptions::default(),
+        };
+        let was_updated = config
+            .set_value("DeveloperSettings", "ForceWifiOn", Some("true"))
+            .unwrap();
+        assert!(!was_updated);
+        assert_eq!(&config.contents, cfg)
     }
 
     #[test]
