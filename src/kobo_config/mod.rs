@@ -25,7 +25,7 @@ async fn update_settings(
 ) -> Result<impl IntoResponse, AppError> {
     let mut config = KoboConfigFile::open(KoboConfigOptions::default())?;
     for s in settings {
-        config.set_value(&s.section, &s.key, s.value.as_deref())?
+        config.set_value(&s.section, &s.key, s.value.as_deref())?;
     }
     config.write()?;
     Ok(())
