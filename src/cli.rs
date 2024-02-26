@@ -54,30 +54,25 @@ pub fn cli() -> Result<()> {
 
     match subcommand {
         Commands::Start => {
-            start_server(&config)?;
+            start_server()?;
             // Print to stdout so it can be displayed in NickelMenu
             println!("Wi-Fi Remote started");
         }
         Commands::Stop => {
-            stop_server(&config)?;
+            stop_server()?;
             println!("Wi-Fi Remote stopped");
         }
         Commands::Restart => {
-            restart_server(&config)?;
+            restart_server()?;
             println!("Wi-Fi Remote restarted")
         }
         Commands::Enable { now } => enable_server(&config, *now)?,
         Commands::Disable { now } => disable_server(&config, *now)?,
         Commands::Toggle => {
-            if let Ok(pid) = config.pid() {
-                if !is_running(pid) {
-                    warn!("PID file contains {pid} but no process running");
-                    enable_server(&config, true)?;
-                } else {
-                    disable_server(&config, true)?;
-                }
-            } else {
+            if get_pid()?.is_none() {
                 enable_server(&config, true)?;
+            } else {
+                disable_server(&config, true)?;
             }
         }
         Commands::Uninstall => {
@@ -88,35 +83,60 @@ pub fn cli() -> Result<()> {
     Ok(())
 }
 
-fn start_server(config: &Config) -> Result<()> {
-    if let Ok(pid) = config.pid() {
-        if is_running(pid) {
-            return Err(anyhow!("Server already running with PID {pid}"));
-        }
-        warn!("PID file contains {pid} but no process running");
+fn get_pid() -> Result<Option<Pid>> {
+    let server_cmd = format!("{} serve", bin_path()?.display());
+    let output = Command::new("pgrep")
+        .arg("-o")
+        .arg("-f")
+        .arg(server_cmd)
+        .output()?;
+    let stdout = String::from_utf8(output.stdout)?;
+    if let Ok(pid) = stdout.trim().parse::<i32>() {
+        Ok(Some(Pid::from_raw(pid)))
+    } else {
+        Ok(None)
     }
-    spawn_server(config)?;
+}
+
+fn bin_path() -> Result<PathBuf> {
+    std::env::current_exe().context("Failed to get path of wifiremote binary")
+}
+
+fn spawn_server() -> Result<()> {
+    let pid = Command::new(bin_path()?)
+        .arg("serve")
+        .spawn()
+        .context("Failed to spawn server")?
+        .id();
+    info!("Started server with PID {pid}");
     Ok(())
 }
 
-fn restart_server(config: &Config) -> Result<()> {
-    if let Ok(pid) = config.pid() {
-        if is_running(pid) {
-            kill(pid, Signal::SIGTERM)?;
-            fs::remove_file(&config.pid_file).context("Failed to remove PID file")?;
-        }
-        warn!("PID file contains {pid} but no process running");
+fn start_server() -> Result<()> {
+    if let Some(pid) = get_pid()? {
+        Err(anyhow!("Wi-Fi Remote already running with PID {pid}"))
+    } else {
+        spawn_server()?;
+        Ok(())
     }
-    spawn_server(config)?;
+}
+
+fn restart_server() -> Result<()> {
+    if let Some(pid) = get_pid()? {
+        kill(pid, Signal::SIGTERM)?;
+    }
+    spawn_server()?;
     Ok(())
 }
 
-fn stop_server(config: &Config) -> Result<()> {
-    let pid = config.pid()?;
-    info!("Stopping server with PID {pid}");
-    kill(pid, Signal::SIGTERM)?;
-    fs::remove_file(&config.pid_file).context("Failed to remove PID file")?;
-    Ok(())
+fn stop_server() -> Result<()> {
+    if let Some(pid) = get_pid()? {
+        info!("Stopping server with PID {pid}");
+        kill(pid, Signal::SIGTERM)?;
+        Ok(())
+    } else {
+        Err(anyhow!("Wi-Fi Remote isn't running"))
+    }
 }
 
 fn enable_server(config: &Config, now: bool) -> Result<()> {
@@ -130,15 +150,8 @@ fn enable_server(config: &Config, now: bool) -> Result<()> {
         std::os::unix::fs::symlink(config.udev_file(), &symlink)?;
         info!("Created symlink to UDEV rules at {}", &symlink.display());
     }
-    if !now {
-        return Ok(());
-    }
-    if let Ok(pid) = config.pid() {
-        if !is_running(pid) {
-            spawn_server(config)?;
-        }
-    } else {
-        spawn_server(config)?;
+    if now && get_pid()?.is_none() {
+        spawn_server()?;
     }
     println!("Wi-Fi Remote enabled");
     Ok(())
@@ -155,30 +168,9 @@ fn disable_server(config: &Config, now: bool) -> Result<()> {
             &symlink.display()
         );
     }
-    if !now {
-        return Ok(());
-    }
-    if let Ok(pid) = config.pid() {
-        if is_running(pid) {
-            stop_server(config)?;
-        }
+    if now && get_pid()?.is_some() {
+        stop_server()?;
     }
     println!("Wi-Fi Remote disabled");
     Ok(())
-}
-
-fn spawn_server(config: &Config) -> Result<()> {
-    let bin = std::env::current_exe().context("Failed to get path of wifiremote binary")?;
-    let pid = Command::new(bin)
-        .arg("serve")
-        .spawn()
-        .context("Failed to spawn server")?
-        .id();
-    info!("Started server with PID {pid}");
-    fs::write(&config.pid_file, pid.to_string()).context("Failed to write PID file")?;
-    Ok(())
-}
-
-fn is_running(pid: Pid) -> bool {
-    kill(pid, Signal::SIGCONT).is_ok()
 }
