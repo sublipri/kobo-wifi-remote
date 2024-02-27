@@ -34,4 +34,7 @@ impl Config {
     pub fn file_list(&self) -> PathBuf {
         self.data_dir.join("tracked_files")
     }
+    pub fn version() -> &'static str {
+        clap::crate_version!()
+    }
 }

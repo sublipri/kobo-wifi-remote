@@ -18,7 +18,7 @@ askama_axum = "0.4.0"
 axum = { version = "0.7.4", features = ["macros"] }
 bincode = "1.3.3"
 chrono = { version = "0.4.31", features = ["serde"] }
-clap = { version = "4.5.1", features = ["derive"] }
+clap = { version = "4.5.1", features = ["derive", "cargo"] }
 evdev-rs = { version = "0.6.1", features = ["serde"] }
 fbink-rs = { git = "https://github.com/sublipri/fbink-rs", features = ["serde"] }
 ini-roundtrip = "0.1.3"
