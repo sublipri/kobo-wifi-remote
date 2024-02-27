@@ -3,6 +3,7 @@ pub mod cli;
 pub mod config;
 pub mod errors;
 pub mod frontend;
+pub mod init;
 pub mod kobo_config;
 pub mod screenshot;
 pub mod server;

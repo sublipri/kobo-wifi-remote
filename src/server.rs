@@ -1,6 +1,7 @@
 use crate::{
     actions::{ActionManager, ActionMsg},
     config::Config,
+    init::first_run,
 };
 
 use std::thread;
@@ -26,6 +27,9 @@ pub struct AppState {
 #[tokio::main(flavor = "current_thread")]
 pub async fn serve() -> Result<()> {
     let config = Config::default();
+    if !config.action_file().exists() {
+        first_run(&config)?;
+    }
     let (tx, rx) = mpsc::channel(32);
     let mut manager = ActionManager::from_path(config.action_file(), rx)?;
     let state = AppState { tx };
