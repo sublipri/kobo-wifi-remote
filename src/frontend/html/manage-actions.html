@@ -20,7 +20,7 @@ SPDX-License-Identifier: GPL-3.0-only
         {% endfor %}
       </select>
       <p>
-        <button type="button" onclick="deleteAction()">Delete Action</button>
+        <button type="button" id="delete-action-btn">Delete Action</button>
       </p>
     </form>
     <div id="result-modal" class="modal">
@@ -35,7 +35,12 @@ SPDX-License-Identifier: GPL-3.0-only
       >
     </p>
   </body>
-  <script>
+  <script type="module">
+    import { displayMsg, sleep } from "/js/lib.js";
+    document.getElementById("delete-action-btn").onclick = async () => {
+      await deleteAction();
+    };
+
     async function deleteAction() {
       const selection = document.getElementById("select-action");
       const path_segment = selection.value;
@@ -47,17 +52,14 @@ SPDX-License-Identifier: GPL-3.0-only
         const result = document.getElementById("result-modal");
         const p = result.querySelector("p");
         if (response.ok) {
-          p.innerHTML = `Deleted ${path_segment}`;
-          result.style.display = "block";
-          await new Promise((r) => setTimeout(r, 1000));
-          result.style.display = "none";
+          displayMsg(`Deleted ${path_segment}`, 1000);
+          await sleep(1000);
           location.reload();
         } else {
-          p.innerHTML = await response.text();
-          result.style.display = "block";
+          displayMsg(await response.text());
         }
       } else {
-        console.log("Please select an action");
+        displayMsg("Select an action", 1000);
       }
     }
   </script>

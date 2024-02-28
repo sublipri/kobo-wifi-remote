@@ -32,6 +32,7 @@ pub fn routes() -> Router<AppState> {
         .route("/styles/remote.css", get(remote_css))
         .route("/js/record-action.js", get(record_action_js))
         .route("/js/colored-buttons.js", get(colored_buttons))
+        .route("/js/lib.js", get(lib_js))
 }
 
 async fn main_css() -> impl IntoResponse {
@@ -53,6 +54,15 @@ async fn record_action_js() -> impl IntoResponse {
         HeaderValue::from_static("text/javascript"),
     );
     (headers, include_str!("js/record-action.js"))
+}
+
+async fn lib_js() -> impl IntoResponse {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("text/javascript"),
+    );
+    (headers, include_str!("js/lib.js"))
 }
 
 async fn colored_buttons() -> impl IntoResponse {

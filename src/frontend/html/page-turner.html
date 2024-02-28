@@ -55,26 +55,16 @@ SPDX-License-Identifier: GPL-3.0-only
         Next
       </button>
     </div>
-    <div id="result-modal" class="modal">
-      <div class="modal-content">
-        <span id="result-close-modal" class="close">&times;</span>
-        <p></p>
-      </div>
-    </div>
   </body>
-  <script>
-    next_btn = document.getElementById("next-page");
-    prev_btn = document.getElementById("prev-page");
-    const close = document.getElementById("result-close-modal");
+  <script type="module">
+    import { playAction } from "/js/lib.js";
+    const next_btn = document.getElementById("next-page");
+    const prev_btn = document.getElementById("prev-page");
     next_btn.onclick = async () => {
       await playAction("next-page");
     };
     prev_btn.onclick = async () => {
       await playAction("prev-page");
-    };
-    close.onclick = function () {
-      const modal = document.getElementById("result-modal");
-      modal.style.display = "none";
     };
 
     window.addEventListener(
@@ -98,16 +88,6 @@ SPDX-License-Identifier: GPL-3.0-only
       },
       true,
     );
-
-    async function playAction(path_segment) {
-      const response = await fetch(`/actions/${path_segment}`);
-      if (!response.ok) {
-        const result = document.getElementById("result-modal");
-        const p = result.querySelector("p");
-        p.innerHTML = await response.text();
-        result.style.display = "block";
-      }
-    }
   </script>
   <script src="/js/colored-buttons.js"></script>
 </html>
