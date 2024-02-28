@@ -38,6 +38,8 @@ pub enum Commands {
         #[arg(long, help = "Stop the server if it's running")]
         now: bool,
     },
+    /// Display the status of the server
+    Status,
     /// Enable or disable the server, start/stopping it if necessary
     Toggle,
     /// Uninstall wifiremote
@@ -68,6 +70,18 @@ pub fn cli() -> Result<()> {
         }
         Commands::Enable { now } => enable_server(&config, *now)?,
         Commands::Disable { now } => disable_server(&config, *now)?,
+        Commands::Status => {
+            if config.udev_link().exists() {
+                print!("Server is enabled")
+            } else {
+                print!("Server is disabled")
+            };
+            if let Some(pid) = get_pid()? {
+                println!(" and running with PID {pid}")
+            } else {
+                println!(" and not running")
+            }
+        }
         Commands::Toggle => {
             if get_pid()?.is_none() {
                 enable_server(&config, true)?;
