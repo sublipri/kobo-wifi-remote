@@ -18,6 +18,7 @@ pub fn first_run(config: &Config) -> Result<()> {
         is_halfway: true,
         is_padded: true,
         font: Font::Fatty,
+        to_syslog: true,
         ..Default::default()
     })?;
 

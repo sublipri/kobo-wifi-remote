@@ -7,14 +7,17 @@ use axum::{
     Router,
 };
 use chrono::Local;
-use fbink_rs::{FbInk, ImageOutputFormat};
+use fbink_rs::{FbInk, FbInkConfig, ImageOutputFormat};
 
 pub fn routes() -> Router<AppState> {
     Router::new().route("/screenshot", get(screenshot))
 }
 
 async fn screenshot() -> Result<impl IntoResponse, AppError> {
-    let fbink = FbInk::with_defaults()?;
+    let fbink = FbInk::new(FbInkConfig {
+        to_syslog: true,
+        ..Default::default()
+    })?;
     let bytes = fbink.screenshot(ImageOutputFormat::Png)?;
     let timestamp = Local::now().format("%Y%m%d-%H%M-%S");
     let filename = format!("{} {timestamp}.png", fbink.state().device_id);
