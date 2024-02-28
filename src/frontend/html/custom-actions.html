@@ -49,13 +49,13 @@ SPDX-License-Identifier: GPL-3.0-only
           min="1"
           required
         /><br />
-        <label for="last-event-timeout"
-          >Last Input Timeout (Milliseconds):</label
+        <label for="new-event-timeout"
+          >New Input Timeout (Milliseconds):</label
         ><br />
         <input
           type="number"
-          id="last-event-timeout"
-          name="last_event_timeout"
+          id="new-event-timeout"
+          name="new_event_timeout"
           class="input-number"
           value="4000"
           min="1"
@@ -130,7 +130,7 @@ SPDX-License-Identifier: GPL-3.0-only
     );
   </script>
   <script type="module">
-    import { setup, alertRecording } from "/js/record-action.js";
+    import { setup } from "/js/record-action.js";
     setup();
   </script>
 </html>

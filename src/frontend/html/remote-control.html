@@ -30,58 +30,31 @@ SPDX-License-Identifier: GPL-3.0-only
         id="btn-{{action.path_segment}}"
         style="background-color: {{color}}"
         title="Next (Shortcut: {{action.shortcut_name()}})"
-        onclick='playAction("{{action.path_segment}}")'
       >
         {{-action.name}}
       </button>
       {% endfor -%}
     </div>
-    <div id="result-modal" class="modal">
-      <div class="modal-content">
-        <span id="result-close-modal" class="close">&times;</span>
-        <p></p>
-      </div>
-    </div>
   </body>
   <script id="shortcuts-json" type="application/json">
     {{shortcuts_json|safe}}
   </script>
-  <script>
+  <script type="module">
+    import { playAction } from "/js/lib.js";
     const json = document.getElementById("shortcuts-json").textContent;
     const shortcuts = JSON.parse(json);
-    window.addEventListener(
-      "keydown",
-      (e) => {
-        for (const [key, path_segment] of Object.entries(shortcuts)) {
-          if (e.code === key) {
-            const btnId = "btn-" + path_segment;
-            const btn = document.getElementById(btnId);
-            if (btn) {
-              btn.click();
-            }
-            break;
-          }
+
+    for (const [key, path_segment] of Object.entries(shortcuts)) {
+      const btnId = "btn-" + path_segment;
+      const btn = document.getElementById(btnId);
+      btn.onclick = async () => {
+        await playAction(path_segment);
+      };
+      window.addEventListener("keydown", (e) => {
+        if (e.code === key) {
+          btn.click();
         }
-      },
-      true,
-    );
-
-    const close = document.getElementById("result-close-modal");
-    close.onclick = function () {
-      const modal = document.getElementById("result-modal");
-      modal.style.display = "none";
-    };
-
-    async function playAction(path_segment) {
-      const response = await fetch(`/actions/${path_segment}`);
-      if (!response.ok) {
-        const result = document.getElementById("result-modal");
-        const p = result.querySelector("p");
-        p.innerHTML = await response.text();
-        result.style.display = "block";
-        await new Promise((r) => setTimeout(r, 3000));
-        result.style.display = "none";
-      }
+      });
     }
   </script>
   <script src="/js/colored-buttons.js"></script>
