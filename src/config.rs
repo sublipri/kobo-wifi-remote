@@ -37,4 +37,7 @@ impl Config {
     pub fn version() -> &'static str {
         clap::crate_version!()
     }
+    pub fn is_dev_mode() -> bool {
+        std::env::var("WIFIREMOTE_DEV_MODE").is_ok_and(|v| v == "1")
+    }
 }
