@@ -50,7 +50,7 @@ pub struct KoboConfigFile {
 impl KoboConfigFile {
     pub fn open(opts: KoboConfigOptions) -> Result<Self> {
         Ok(Self {
-            contents: fs::read_to_string(&opts.path)?,
+            contents: fs::read_to_string(&opts.path).context("Failed to open Kobo eReader.conf")?,
             opts,
         })
     }
