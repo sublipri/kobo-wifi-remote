@@ -36,42 +36,23 @@ pub fn routes() -> Router<AppState> {
 }
 
 async fn main_css() -> impl IntoResponse {
-    let mut headers = HeaderMap::new();
-    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/css"));
-    (headers, include_str!("styles/main.css"))
+    (css_header(), include_str!("styles/main.css"))
 }
 
 async fn remote_css() -> impl IntoResponse {
-    let mut headers = HeaderMap::new();
-    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/css"));
-    (headers, include_str!("styles/remote.css"))
+    (css_header(), include_str!("styles/remote.css"))
 }
 
 async fn record_action_js() -> impl IntoResponse {
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        header::CONTENT_TYPE,
-        HeaderValue::from_static("text/javascript"),
-    );
-    (headers, include_str!("js/record-action.js"))
+    (js_header(), include_str!("js/record-action.js"))
 }
 
 async fn lib_js() -> impl IntoResponse {
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        header::CONTENT_TYPE,
-        HeaderValue::from_static("text/javascript"),
-    );
-    (headers, include_str!("js/lib.js"))
+    (js_header(), include_str!("js/lib.js"))
 }
 
 async fn colored_buttons() -> impl IntoResponse {
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        header::CONTENT_TYPE,
-        HeaderValue::from_static("text/javascript"),
-    );
-    (headers, include_str!("js/colored-buttons.js"))
+    (js_header(), include_str!("js/colored-buttons.js"))
 }
 
 async fn remote_control(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
@@ -96,4 +77,17 @@ async fn manage_actions(State(state): State<AppState>) -> Result<impl IntoRespon
     state.tx.send(ActionMsg::List { resp: tx }).await?;
     let actions = rx.await?;
     Ok(templates::ManageActions { actions })
+}
+
+fn js_header() -> HeaderMap {
+    let mut headers = HeaderMap::with_capacity(1);
+    let value = HeaderValue::from_static("text/javascript");
+    headers.insert(header::CONTENT_TYPE, value);
+    headers
+}
+
+fn css_header() -> HeaderMap {
+    let mut headers = HeaderMap::with_capacity(1);
+    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/css"));
+    headers
 }
