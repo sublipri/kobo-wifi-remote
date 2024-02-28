@@ -5,5 +5,6 @@ pub mod errors;
 pub mod frontend;
 pub mod init;
 pub mod kobo_config;
+pub mod logging;
 pub mod screenshot;
 pub mod server;
