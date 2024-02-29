@@ -20,7 +20,10 @@ impl Default for Config {
 
 impl Config {
     pub fn action_file(&self) -> PathBuf {
-        self.data_dir.join("actions.bin")
+        self.user_dir.join("actions.toml")
+    }
+    pub fn recordings_file(&self) -> PathBuf {
+        self.data_dir.join("recordings.bin")
     }
     pub fn udev_file(&self) -> PathBuf {
         self.data_dir.join("udev.rules")

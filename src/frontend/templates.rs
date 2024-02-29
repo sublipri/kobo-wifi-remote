@@ -1,6 +1,6 @@
 use askama::Template;
 
-use crate::actions::Action;
+use crate::actions::ListActionResponse;
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -25,12 +25,12 @@ pub struct Troubleshooting {}
 #[derive(Template)]
 #[template(path = "remote-control.html")]
 pub struct RemoteControl {
-    pub actions: Vec<Action>,
+    pub actions: Vec<ListActionResponse>,
     pub shortcuts_json: String,
 }
 
 #[derive(Template)]
 #[template(path = "manage-actions.html")]
 pub struct ManageActions {
-    pub actions: Vec<Action>,
+    pub actions: Vec<ListActionResponse>,
 }
