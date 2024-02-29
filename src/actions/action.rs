@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Duration, Utc};
@@ -19,28 +20,24 @@ use tokio::sync::{mpsc, oneshot};
 use tracing::{debug, warn};
 
 pub struct ActionManager {
-    pub path: PathBuf,
-    pub actions: BTreeMap<String, Action>,
+    pub actions: ActionsFile,
+    pub fbink: Arc<FbInk>,
+    pub recordings: RecordingsFile,
     pub rx: mpsc::Receiver<ActionMsg>,
     pub play_wait_until: DateTime<Utc>,
 }
 
 impl ActionManager {
-    pub fn from_path(path: PathBuf, rx: mpsc::Receiver<ActionMsg>) -> Result<Self> {
-        let actions = if path.exists() {
-            debug!("Loading actions from {}", path.display());
-            let bytes = fs::read(&path)
-                .with_context(|| format!("Failed to read actions from {}", &path.display()))?;
-            bincode::deserialize(&bytes).with_context(|| {
-                format!("Failed to deserialize actions from {}", &path.display())
-            })?
-        } else {
-            debug!("No action file at {}", path.display());
-            BTreeMap::new()
-        };
+    pub fn from_path(
+        actions_path: PathBuf,
+        recordings_path: PathBuf,
+        fbink: Arc<FbInk>,
+        rx: mpsc::Receiver<ActionMsg>,
+    ) -> Result<Self> {
         Ok(Self {
-            path,
-            actions,
+            actions: ActionsFile::load(actions_path)?,
+            recordings: RecordingsFile::load(recordings_path)?,
+            fbink,
             rx,
             play_wait_until: Utc::now(),
         })
@@ -48,30 +45,35 @@ impl ActionManager {
 
     fn record(&mut self, opts: RecordActionOptions) -> Result<RecordActionResponse> {
         let path_segment = opts.path_segment.clone().unwrap_or(slugify(&opts.name));
-        let response = if let Some(ref mut action) = self.actions.get_mut(&path_segment) {
-            action.record(&opts)?
-        } else {
-            let mut action = Action::new(&opts)?;
-            let response = action.record(&opts)?;
-            self.actions.insert(path_segment, action);
-            response
-        };
-        self.write()?;
-        Ok(response)
-    }
 
-    fn write(&self) -> Result<()> {
-        let bytes = bincode::serialize(&self.actions).context("Failed to serialize actions")?;
-        if self.path.exists() {
-            fs::copy(&self.path, self.path.with_extension("bin.bkp"))
-                .context("Failed to backup actions file")?;
+        if !self.actions.data.contains_key(&path_segment) {
+            self.actions.data.insert(
+                path_segment.clone(),
+                Action {
+                    sort_value: opts.sort_value.clone().unwrap_or(opts.name.clone()),
+                    name: opts.name.clone(),
+                    keyboard_shortcut: opts.keyboard_shortcut,
+                    post_playback_delay: opts.post_playback_delay,
+                },
+            );
+            self.actions.write()?;
         }
-        let tmp = self.path.with_extension("tmp");
-        debug!("Writing actions to {}", tmp.display());
-        fs::write(&tmp, bytes)
-            .with_context(|| format!("Failed to write actions to {}", tmp.display()))?;
-        fs::rename(&tmp, &self.path).context("Failed to rename temporary actions file")?;
-        Ok(())
+
+        let action = self.actions.data.get(&path_segment).unwrap();
+        let rotation = self.fbink.current_rotation()?;
+        let recording = ActionRecording::record(&opts, rotation)?;
+        let response = RecordActionResponse {
+            name: action.name.clone(),
+            path_segment: path_segment.clone(),
+            sort_value: action.sort_value.clone(),
+            keyboard_shortcut: action.keyboard_shortcut,
+            rotation: rotation.to_string(),
+            was_optimized: recording.is_optimized,
+            device: recording.dev_name.clone(),
+        };
+        self.recordings.add(path_segment, recording, rotation)?;
+
+        Ok(response)
     }
 
     fn play(&mut self, path_segment: &str) -> Result<()> {
@@ -80,17 +82,19 @@ impl ActionManager {
         if Utc::now() < self.play_wait_until {
             sleep(self.play_wait_until - Utc::now());
         }
-        let Some(action) = self.actions.get(path_segment) else {
-            return Err(anyhow!("No action exists for {path_segment}"));
-        };
-        action.play()?;
+        let rotation = self.fbink.current_rotation()?;
+        let recording = self.recordings.get(path_segment, rotation)?;
+        let action = self.actions.data.get(path_segment).unwrap();
+        recording.play(path_segment)?;
         self.play_wait_until = Utc::now() + action.post_playback_delay;
         Ok(())
     }
 
     fn delete(&mut self, path_segment: &str) -> Result<()> {
-        if self.actions.remove(path_segment).is_some() {
-            self.write()?;
+        if self.actions.data.remove(path_segment).is_some() {
+            self.actions.write()?;
+            self.recordings.data.remove(path_segment);
+            self.recordings.write()?;
             Ok(())
         } else {
             Err(anyhow!("No action exists for {path_segment}"))
@@ -113,7 +117,16 @@ impl ActionManager {
                     }
                 }
                 Some(ActionMsg::List { resp }) => {
-                    let mut actions: Vec<Action> = self.actions.values().cloned().collect();
+                    let mut actions = Vec::new();
+                    for (path_segment, action) in self.actions.data.iter() {
+                        actions.push(ListActionResponse {
+                            name: action.name.clone(),
+                            path_segment: path_segment.clone(),
+                            sort_value: action.sort_value.clone(),
+                            keyboard_shortcut: action.keyboard_shortcut,
+                            post_playback_delay: action.post_playback_delay,
+                        })
+                    }
                     actions.sort_by(|a, b| a.sort_value.partial_cmp(&b.sort_value).unwrap());
                     if resp.send(actions).is_err() {
                         warn!("Unable to send actions list. Receiver dropped")
@@ -141,37 +154,12 @@ pub enum ActionMsg {
         resp: oneshot::Sender<Result<()>>,
     },
     List {
-        resp: oneshot::Sender<Vec<Action>>,
+        resp: oneshot::Sender<Vec<ListActionResponse>>,
     },
     Delete {
         path_segment: String,
         resp: oneshot::Sender<Result<()>>,
     },
-}
-
-#[serde_with::serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Action {
-    pub name: String,
-    pub path_segment: String,
-    pub sort_value: String,
-    pub keyboard_shortcut: Option<keyboard_types::Code>,
-    pub recordings: [Option<ActionRecording>; 4],
-    #[serde_as(as = "DurationMilliSeconds<i64>")]
-    pub post_playback_delay: Duration,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ActionRecording {
-    pub rotation: CanonicalRotation,
-    pub events: Vec<ActionEvent>,
-    pub dev_path: PathBuf,
-    pub is_optimized: bool,
-}
-
-fn current_rotation() -> Result<CanonicalRotation> {
-    let fbink = FbInk::with_defaults()?;
-    Ok(fbink.state().canonical_rotation())
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -185,26 +173,49 @@ pub struct RecordActionResponse {
     pub device: String,
 }
 
-impl Action {
-    pub fn new(opts: &RecordActionOptions) -> Result<Self> {
-        Ok(Self {
-            sort_value: opts.sort_value.clone().unwrap_or(opts.name.clone()),
-            path_segment: opts.path_segment.clone().unwrap_or(slugify(&opts.name)),
-            name: opts.name.clone(),
-            keyboard_shortcut: opts.keyboard_shortcut,
-            post_playback_delay: opts.post_playback_delay,
-            recordings: [None, None, None, None],
-        })
-    }
+#[serde_with::serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Action {
+    pub name: String,
+    pub sort_value: String,
+    pub keyboard_shortcut: Option<keyboard_types::Code>,
+    #[serde_as(as = "DurationMilliSeconds<i64>")]
+    pub post_playback_delay: Duration,
+}
 
+#[serde_with::serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ListActionResponse {
+    pub name: String,
+    pub path_segment: String,
+    pub sort_value: String,
+    pub keyboard_shortcut: Option<keyboard_types::Code>,
+    #[serde_as(as = "DurationMilliSeconds<i64>")]
+    pub post_playback_delay: Duration,
+}
+
+impl ListActionResponse {
     pub fn shortcut_name(&self) -> String {
         self.keyboard_shortcut
             .map_or("None".to_string(), |s| s.to_string())
     }
+}
 
-    pub fn record(&mut self, opts: &RecordActionOptions) -> Result<RecordActionResponse> {
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ActionRecording {
+    pub rotation: CanonicalRotation,
+    pub events: Vec<ActionEvent>,
+    pub dev_path: PathBuf,
+    pub dev_name: String,
+    pub is_optimized: bool,
+}
+
+impl ActionRecording {
+    pub fn record(
+        opts: &RecordActionOptions,
+        rotation: CanonicalRotation,
+    ) -> Result<ActionRecording> {
         let devices = get_input_devices()?;
-        let rotation = current_rotation()?;
 
         let devices_with_events = if opts.only_check_touch {
             read_input(
@@ -249,55 +260,35 @@ impl Action {
             false
         };
 
-        let response = RecordActionResponse {
-            name: self.name.clone(),
-            path_segment: self.path_segment.clone(),
-            sort_value: self.sort_value.clone(),
-            keyboard_shortcut: self.keyboard_shortcut,
-            rotation: rotation.to_string(),
-            was_optimized: is_optimized,
-            device: format!("{}", &device),
-        };
-
-        let recording = ActionRecording {
+        let dev_name = device.to_string();
+        Ok(ActionRecording {
             dev_path: device.path,
             events: create_action_events(&events),
             rotation,
+            dev_name,
             is_optimized,
-        };
-        self.recordings[rotation as usize] = Some(recording);
-
-        Ok(response)
+        })
     }
 
-    pub fn play(&self) -> Result<()> {
-        let rotation = current_rotation()?;
-        let Some(ref recording) = self.recordings[rotation as usize] else {
-            return Err(anyhow!(
-                "No recording for {} in {} rotation",
-                self.name,
-                rotation
-            ));
-        };
-
+    pub fn play(&self, path_segment: &str) -> Result<()> {
         let mut f = File::options()
             .read(true)
             .write(true)
-            .open(&recording.dev_path)
+            .open(&self.dev_path)
             .unwrap();
 
         debug!(
             "Writing events for {} to {}",
-            &self.path_segment,
-            &recording.dev_path.display()
+            path_segment,
+            &self.dev_path.display()
         );
-        for ev in &recording.events {
+        for ev in &self.events {
             f.write_all(&ev.buf).unwrap();
             if let Some(dur) = ev.sleep_duration {
                 sleep(dur);
             }
         }
-        debug!("Finished writing events for {}", &self.path_segment);
+        debug!("Finished writing events for {}", path_segment);
 
         Ok(())
     }
@@ -406,5 +397,108 @@ fn sleep(duration: Duration) {
     if duration > Duration::zero() {
         debug!("Sleeping for {}ms", duration.num_milliseconds());
         std::thread::sleep(duration.to_std().unwrap());
+    }
+}
+
+pub struct ActionsFile {
+    pub path: PathBuf,
+    pub data: BTreeMap<String, Action>,
+}
+
+impl ActionsFile {
+    pub fn load(path: PathBuf) -> Result<Self> {
+        let actions = if path.exists() {
+            debug!("Loading actions from {}", path.display());
+            let file = fs::read_to_string(&path)
+                .with_context(|| format!("Failed to read actions from {}", &path.display()))?;
+            toml::from_str(&file).with_context(|| {
+                format!("Failed to deserialize actions from {}", &path.display())
+            })?
+        } else {
+            debug!("No action file at {}", path.display());
+            BTreeMap::new()
+        };
+        Ok(Self {
+            path,
+            data: actions,
+        })
+    }
+
+    pub fn write(&self) -> Result<()> {
+        let serialized = toml::to_string(&self.data).context("Failed to serialize actions")?;
+        if self.path.exists() {
+            fs::copy(&self.path, self.path.with_extension("toml.bkp"))
+                .context("Failed to backup actions file")?;
+        }
+        let tmp = self.path.with_extension("tmp");
+        debug!("Writing actions to {}", tmp.display());
+        fs::write(&tmp, serialized)
+            .with_context(|| format!("Failed to write actions to {}", tmp.display()))?;
+        fs::rename(&tmp, &self.path).context("Failed to rename temporary actions file")?;
+        Ok(())
+    }
+}
+
+pub struct RecordingsFile {
+    pub path: PathBuf,
+    pub data: BTreeMap<String, [Option<ActionRecording>; 4]>,
+}
+
+impl RecordingsFile {
+    pub fn load(path: PathBuf) -> Result<Self> {
+        let recordings = if path.exists() {
+            debug!("Loading recordings from {}", path.display());
+            let bytes = fs::read(&path)
+                .with_context(|| format!("Failed to read recordings from {}", &path.display()))?;
+            bincode::deserialize(&bytes).with_context(|| {
+                format!("Failed to deserialize recordings from {}", &path.display())
+            })?
+        } else {
+            debug!("No recordings file at {}", path.display());
+            BTreeMap::new()
+        };
+        Ok(Self {
+            path,
+            data: recordings,
+        })
+    }
+    pub fn write(&self) -> Result<()> {
+        let bytes = bincode::serialize(&self.data).context("Failed to serialize recordings")?;
+        if self.path.exists() {
+            fs::copy(&self.path, self.path.with_extension("bin.bkp"))
+                .context("Failed to backup recordings file")?;
+        }
+        let tmp = self.path.with_extension("tmp");
+        debug!("Writing recordings to {}", tmp.display());
+        fs::write(&tmp, bytes)
+            .with_context(|| format!("Failed to write recordings to {}", tmp.display()))?;
+        fs::rename(&tmp, &self.path).context("Failed to rename temporary recordings file")?;
+        Ok(())
+    }
+
+    pub fn get(&self, path_segment: &str, rotation: CanonicalRotation) -> Result<&ActionRecording> {
+        let Some(recordings) = self.data.get(path_segment) else {
+            return Err(anyhow!(
+                "No recording for {path_segment} in {rotation} rotation"
+            ));
+        };
+        match recordings[rotation as usize] {
+            Some(ref recording) => Ok(recording),
+            None => Err(anyhow!(
+                "No recording for {path_segment} in {rotation} rotation"
+            )),
+        }
+    }
+
+    pub fn add(
+        &mut self,
+        path_segment: String,
+        recording: ActionRecording,
+        rotation: CanonicalRotation,
+    ) -> Result<()> {
+        let recordings = self.data.entry(path_segment).or_default();
+        recordings[rotation as usize] = Some(recording);
+        self.write()?;
+        Ok(())
     }
 }

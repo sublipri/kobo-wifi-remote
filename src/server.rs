@@ -4,7 +4,7 @@ use crate::{
     init::first_run,
 };
 
-use std::thread;
+use std::{sync::Arc, thread};
 
 use anyhow::Result;
 use axum::{
@@ -12,6 +12,7 @@ use axum::{
     http::{header, HeaderValue},
     Router, ServiceExt,
 };
+use fbink_rs::{FbInk, FbInkConfig};
 use tokio::sync::mpsc;
 use tower::Layer;
 use tower_http::{
@@ -22,6 +23,7 @@ use tracing::info;
 #[derive(Clone)]
 pub struct AppState {
     pub tx: mpsc::Sender<ActionMsg>,
+    pub fbink: Arc<FbInk>,
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -31,8 +33,16 @@ pub async fn serve() -> Result<()> {
         first_run(&config)?;
     }
     let (tx, rx) = mpsc::channel(32);
-    let mut manager = ActionManager::from_path(config.action_file(), rx)?;
-    let state = AppState { tx };
+    let fbink = Arc::new(FbInk::new(FbInkConfig {
+        to_syslog: true,
+        ..Default::default()
+    })?);
+    let state = AppState {
+        tx,
+        fbink: fbink.clone(),
+    };
+    let mut manager =
+        ActionManager::from_path(config.action_file(), config.recordings_file(), fbink, rx)?;
     thread::spawn(move || manager.manage());
     let app = Router::new()
         .merge(crate::actions::routes())
