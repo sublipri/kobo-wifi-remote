@@ -1,11 +1,53 @@
 use crate::config::Config;
 use crate::kobo_config::KoboConfigFile;
 
-use std::{process::Command, thread::sleep, time::Duration};
+use std::{
+    collections::HashSet,
+    fs::{self, File},
+    io::{BufRead, BufReader, LineWriter, Write},
+    path::PathBuf,
+    process::Command,
+    thread::sleep,
+    time::Duration,
+};
 
 use anyhow::{anyhow, Context, Result};
 use fbink_rs::{config::Font, FbInk, FbInkConfig};
-use tracing::trace;
+use tracing::{debug, trace};
+
+pub fn init(config: &Config) -> Result<()> {
+    merge_files(config.file_list(), config.file_list().with_extension("new"))?;
+    merge_files(config.dir_list(), config.dir_list().with_extension("new"))?;
+
+    if !config.action_file().exists() && !Config::is_dev_mode() {
+        first_run(config)?;
+    }
+    Ok(())
+}
+
+pub fn merge_files(old_files: PathBuf, new_files: PathBuf) -> Result<()> {
+    if old_files.exists() && new_files.exists() {
+        let (old, new) = (old_files.display(), new_files.display());
+        debug!("Merging {new} with {old}");
+        let mut existing = HashSet::new();
+        for line in BufReader::new(File::open(&old_files)?).lines().flatten() {
+            existing.insert(line);
+        }
+        let file = File::options().append(true).open(&old_files)?;
+        let mut file = LineWriter::new(file);
+        for line in BufReader::new(File::open(&new_files)?).lines().flatten() {
+            if !existing.contains(&line) {
+                file.write_all(&line.into_bytes())?;
+            }
+        }
+        fs::remove_file(&new_files)?;
+    } else if new_files.exists() {
+        let (old, new) = (old_files.display(), new_files.display());
+        debug!("Renaming {new} to {old}");
+        fs::rename(&new_files, &old_files)?;
+    }
+    Ok(())
+}
 
 pub fn first_run(config: &Config) -> Result<()> {
     let mut kobo_config = KoboConfigFile::open(Default::default())?;
