@@ -157,14 +157,12 @@ fn stop_server() -> Result<()> {
 
 fn enable_server(config: &Config, now: bool) -> Result<()> {
     let symlink = config.udev_link();
+    let s = symlink.display();
     if symlink.exists() {
-        info!(
-            "Symlink to UDEV rules already exists at {}",
-            symlink.display()
-        );
+        info!("Symlink to UDEV rules already exists at {s}",);
     } else {
         std::os::unix::fs::symlink(config.udev_file(), &symlink)?;
-        info!("Created symlink to UDEV rules at {}", &symlink.display());
+        info!("Created symlink to UDEV rules at {s}");
     }
     if now && get_pid()?.is_none() {
         spawn_server()?;
@@ -175,14 +173,12 @@ fn enable_server(config: &Config, now: bool) -> Result<()> {
 
 fn disable_server(config: &Config, now: bool) -> Result<()> {
     let symlink = config.udev_link();
+    let s = symlink.display();
     if symlink.exists() {
-        info!("Removing symlink to UDEV rules at {}", &symlink.display());
+        info!("Removing symlink to UDEV rules at {s}");
         fs::remove_file(symlink)?;
     } else {
-        info!(
-            "Symlink to UDEV rules doesn't exist at {}",
-            &symlink.display()
-        );
+        info!("Symlink to UDEV rules doesn't exist at {s}",);
     }
     if now && get_pid()?.is_some() {
         stop_server()?;
