@@ -1,7 +1,7 @@
 use crate::{
     actions::{ActionManager, ActionMsg},
     config::Config,
-    init::first_run,
+    init::init,
 };
 
 use std::{sync::Arc, thread};
@@ -29,9 +29,7 @@ pub struct AppState {
 #[tokio::main(flavor = "current_thread")]
 pub async fn serve() -> Result<()> {
     let config = Config::default();
-    if !config.action_file().exists() && !Config::is_dev_mode() {
-        first_run(&config)?;
-    }
+    init(&config)?;
     let (tx, rx) = mpsc::channel(32);
     let fbink = Arc::new(FbInk::new(FbInkConfig {
         to_syslog: true,
