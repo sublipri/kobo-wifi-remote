@@ -52,7 +52,7 @@ export function alertRecording(timeleft, id) {
     countdown.innerHTML = timeleft;
     if (timeleft <= 0) {
       clearInterval(timer);
-      modal.style.display = "none";
+      countdown.innerHTML = "";
     }
   }, 1000);
   timers[id] = timer;
@@ -80,7 +80,7 @@ export async function recordAction(form, id) {
     const recorded = await response.json();
     displayMsg(
       `Recorded ${recorded.name} in ${recorded.rotation} rotation`,
-      2000,
+      1500,
     );
   } else {
     displayMsg(await response.text());

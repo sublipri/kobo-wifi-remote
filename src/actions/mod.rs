@@ -81,7 +81,7 @@ async fn record_action(
     State(state): State<AppState>,
     Json(opts): Json<RecordActionOptions>,
 ) -> Result<impl IntoResponse, AppError> {
-    debug!("Received request to record action: {:?}", &opts);
+    debug!("Received request to record action: {:#?}", &opts);
     let (tx, rx) = oneshot::channel();
     state.tx.send(ActionMsg::Record { opts, resp: tx }).await?;
     let response = rx.await??;
