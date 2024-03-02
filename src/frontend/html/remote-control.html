@@ -29,7 +29,7 @@ SPDX-License-Identifier: GPL-3.0-only
         type="button"
         id="btn-{{action.path_segment}}"
         style="background-color: {{color}}"
-        title="Next (Shortcut: {{action.shortcut_name()}})"
+        title="{{action.name}} (Shortcut: {{action.shortcut_name()}})"
       >
         {{-action.name}}
       </button>
@@ -44,12 +44,15 @@ SPDX-License-Identifier: GPL-3.0-only
     const json = document.getElementById("shortcuts-json").textContent;
     const shortcuts = JSON.parse(json);
 
-    for (const [key, path_segment] of Object.entries(shortcuts)) {
+    for (const [path_segment, key] of Object.entries(shortcuts)) {
       const btnId = "btn-" + path_segment;
       const btn = document.getElementById(btnId);
       btn.onclick = async () => {
         await playAction(path_segment);
       };
+      if (!key) {
+        continue;
+      }
       window.addEventListener("keydown", (e) => {
         if (e.code === key) {
           btn.click();
