@@ -61,9 +61,7 @@ async fn remote_control(State(state): State<AppState>) -> Result<impl IntoRespon
     let actions = rx.await?;
     let mut shortcuts = HashMap::new();
     for a in &actions {
-        if let Some(shortcut) = a.keyboard_shortcut {
-            shortcuts.insert(shortcut, a.path_segment.clone());
-        }
+        shortcuts.insert(a.path_segment.clone(), a.keyboard_shortcut);
     }
     let shortcuts_json = serde_json::to_string_pretty(&shortcuts)?;
     Ok(templates::RemoteControl {
