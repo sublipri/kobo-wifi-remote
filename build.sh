@@ -43,6 +43,10 @@ KERNEL==\"wlan*\", ACTION==\"add\", RUN+=\"$MAIN_BIN uninstall\""
 mkdir ./build/root/mnt/onboard/.adds/nm
 cat >./build/root/mnt/onboard/.adds/nm/wifiremote <<EOF
 menu_item :main :Wi-Fi Remote (toggle) :cmd_output :1000:"$MAIN_BIN" toggle
+# menu_item :main :Wi-Fi Remote (enable) :cmd_output :1000:"$MAIN_BIN" enable --now
+# menu_item :main :Wi-Fi Remote (disable) :cmd_output :1000:"$MAIN_BIN" disable --now
+# menu_item :main :Wi-Fi Remote (status) :cmd_output :1000:"$MAIN_BIN" status
+# menu_item :main :Wi-Fi Remote (restart) :cmd_output :1000:"$MAIN_BIN" restart
 EOF
 
 # create list of files and directories to remove when uninstalling
@@ -62,7 +66,7 @@ create_tgz() {
 }
 
 if [ "$1" = 'deploy' ]; then
-	rsync -vrlh ./build/root/ root@"$KOBO_HOST":/
+	rsync -vrlh --progress ./build/root/ root@"$KOBO_HOST":/
 	ssh root@"$KOBO_HOST" -- "$MAIN_BIN" restart
 	rm -r ./build
 else
