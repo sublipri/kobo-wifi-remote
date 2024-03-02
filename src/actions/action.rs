@@ -62,6 +62,9 @@ impl ActionManager {
         let action = self.actions.data.get(&path_segment).unwrap();
         let rotation = self.fbink.current_rotation()?;
         let recording = ActionRecording::record(&opts, rotation)?;
+        if rotation != self.fbink.current_rotation()? {
+            return Err(anyhow!("The rotation changed during recording."))
+        }
         let response = RecordActionResponse {
             name: action.name.clone(),
             path_segment: path_segment.clone(),
