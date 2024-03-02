@@ -951,6 +951,7 @@ dependencies = [
  "clap",
  "evdev-rs",
  "fbink-rs",
+ "flate2",
  "indoc",
  "ini-roundtrip",
  "keyboard-types",

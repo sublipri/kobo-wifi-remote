@@ -21,6 +21,7 @@ chrono = { version = "0.4.31", features = ["serde"] }
 clap = { version = "4.5.1", features = ["derive", "cargo"] }
 evdev-rs = { version = "0.6.1", features = ["serde"] }
 fbink-rs = { git = "https://github.com/sublipri/fbink-rs", features = ["serde"] }
+flate2 = "1.0.28"
 ini-roundtrip = "0.1.3"
 keyboard-types = "0.7.0"
 nix = { version = "0.27.1", features = ["fs", "process", "signal"] }
