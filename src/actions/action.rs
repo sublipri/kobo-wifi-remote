@@ -328,7 +328,7 @@ impl Default for RecordActionOptions {
             post_playback_delay: Duration::milliseconds(300),
             syn_gap: Duration::microseconds(1),
             no_input_timeout: Duration::milliseconds(5000),
-            new_event_timeout: Duration::milliseconds(500),
+            new_event_timeout: Duration::milliseconds(4000),
             poll_wait: Duration::milliseconds(10),
         }
     }

@@ -14,13 +14,20 @@ SPDX-License-Identifier: GPL-3.0-only
     <br />
     <form class="action-form" id="record-action-form">
       <label for="name">Display Name:</label><br />
-      <input type="text" id="name" name="name" required /><br />
+      <input
+        type="text"
+        id="name"
+        name="name"
+        title="The name to display in the remote control"
+        required
+      /><br />
       <label for="sort-value">Sort Value:</label><br />
       <input
         type="text"
         id="sort-value"
         name="sort_value"
         placeholder="Optional"
+        title="Used to sort the buttons in the remote control. Defaults to display name."
       /><br />
       <label for="keyboard_shortcut">Keyboard Shortcut:</label><br />
       <input
@@ -28,52 +35,88 @@ SPDX-License-Identifier: GPL-3.0-only
         id="keyboard-shortcut"
         name="keyboard_shortcut"
         placeholder="Optional"
+        title="A keyboard shortcut to trigger the action in the remote control"
       /><br />
+      <br />
       <details>
-        <summary>Advanced Options</summary>
+        <summary>Advanced Options:</summary>
+        <br />
         <label for="path_segment">URL Path Segment:</label><br />
         <input
           type="text"
           id="path-segment"
           name="path_segment"
+          title="Derived from the display name if left blank"
           placeholder="Optional"
         /><br />
-        <label for="no-input-timeout">No Input Timeout (Milliseconds):</label
-        ><br />
+        <label for="post-playback-delay">Post-Playback Delay (ms):</label><br />
+        <input
+          type="number"
+          id="post-playback-delay"
+          name="post_playback_delay"
+          class="input-number"
+          value="300"
+          title="How long in milliseconds to wait after replaying the input before playing another action"
+          step="50"
+        /><br />
+        <label for="no-input-timeout">No Input Timeout (ms):</label><br />
         <input
           type="number"
           id="no-input-timeout"
           name="no_input_timeout"
           class="input-number"
           value="5000"
-          min="1"
+          title="How long in milliseconds to wait without input before stopping recording"
+          min="1000"
+          step="500"
           required
         /><br />
-        <label for="new-event-timeout"
-          >New Input Timeout (Milliseconds):</label
-        ><br />
+        <label for="new-event-timeout">New Input Timeout (ms):</label><br />
         <input
           type="number"
           id="new-event-timeout"
           name="new_event_timeout"
           class="input-number"
           value="4000"
-          min="1"
-          required
+          title="How long in milliseconds to wait after the last input before stopping recording"
+          min="100"
+          step="100"
         /><br />
-        <label for="optimize-input">Optimize Input</label><br />
-        <input
-          type="checkbox"
-          id="optimize-input"
-          name="optimize"
-          checked
-        /><br />
-        <label for="only-check-touch">Only check touchscreen</label><br />
+        <label for="only-check-touch">Only Check Touchscreen:</label><br />
         <input
           type="checkbox"
           id="only-check-touch"
           name="only_check_touch"
+          title="Only check for input on the touchscreen"
           checked
+        /><br />
+        <label for="optimize-input">Optimize Input:</label><br />
+        <input
+          type="checkbox"
+          id="optimize-input"
+          name="optimize"
+          title="Optimize actions that consist of a single tap or swipe so they replay quicker"
+          checked
+        /><br />
+        <label for="syn-gap">Optimized Event Gap (μs):</label><br />
+        <input
+          type="number"
+          id="syn-gap"
+          name="syn_gap"
+          class="input-number"
+          value="1"
+          title="How long in microseconds to make the gap between input event batches when optimizing"
+          min="1"
+        /><br />
+        <label for="poll-wait">Poll Frequency (ms):</label><br />
+        <input
+          type="number"
+          id="poll-wait"
+          name="poll_wait"
+          class="input-number"
+          value="10"
+          title="How often in milliseconds to check for input"
+          min="1"
         /><br />
       </details>
       <p>
@@ -83,7 +126,7 @@ SPDX-License-Identifier: GPL-3.0-only
           id="create-action"
           class="records-input"
         >
-          Create Action
+          Record Action
         </button>
       </p>
     </form>
