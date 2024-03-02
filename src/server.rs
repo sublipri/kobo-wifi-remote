@@ -6,7 +6,7 @@ use crate::{
 
 use std::{sync::Arc, thread};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use axum::{
     extract::Request,
     http::{header, HeaderValue},
@@ -58,8 +58,12 @@ pub async fn serve() -> Result<()> {
     .layer(app);
     let app = ServiceExt::<Request>::into_make_service(app);
     let host = format!("0.0.0.0:{}", config.port);
-    let listener = tokio::net::TcpListener::bind(host).await.unwrap();
-    info!("Starting server on port {}", config.port);
-    axum::serve(listener, app).await?;
+    let listener = tokio::net::TcpListener::bind(&host)
+        .await
+        .with_context(|| format!("Failed to bind TcpListener to {}", &host))?;
+    info!("Server listening on {host}");
+    axum::serve(listener, app)
+        .await
+        .context("Failed to start Axum server")?;
     Ok(())
 }
