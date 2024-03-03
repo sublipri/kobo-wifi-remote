@@ -3,12 +3,18 @@ use crate::{config::Config, server};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::thread::sleep;
+use std::time::Duration;
 
 use anyhow::{anyhow, Context, Result};
+use chrono::Local;
 use clap::{Parser, Subcommand};
+use fbink_rs::config::Font;
+use fbink_rs::{FbInk, FbInkConfig, ImageOutputFormat};
 use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
 use serde::{Deserialize, Serialize};
+use slug::slugify;
 use tracing::{info, warn};
 
 #[derive(Parser, Debug, Deserialize, Serialize)]
@@ -47,6 +53,14 @@ pub enum Commands {
     Uninstall {
         #[arg(long, help = "Print what will be deleted without removing anything")]
         dry_run: bool,
+    },
+    Screenshot {
+        /// How long in seconds to wait before taking the screenshot
+        #[arg(long, default_value_t = 0)]
+        delay: u64,
+        /// Display the output path on the e-reader using FBInk
+        #[arg(long = "fbink")]
+        use_fbink: bool,
     },
 }
 
@@ -95,6 +109,7 @@ pub fn cli() -> Result<()> {
         }
         Commands::Uninstall { dry_run } => uninstall(&config, *dry_run)?,
         Commands::Serve => server::serve()?,
+        Commands::Screenshot { delay, use_fbink } => screenshot(&config, *delay, *use_fbink)?,
     }
     Ok(())
 }
@@ -254,5 +269,33 @@ fn delete_if_exists(path: &Path, dry_run: bool) -> Result<()> {
     } else {
         warn!("{p} is not a file or empty directory. Skipping");
     }
+    Ok(())
+}
+
+fn screenshot(config: &Config, delay: u64, use_fbink: bool) -> Result<()> {
+    let fbink = FbInk::new(FbInkConfig {
+        is_centered: true,
+        is_halfway: true,
+        is_padded: true,
+        font: Font::Fatty,
+        to_syslog: true,
+        ..Default::default()
+    })?;
+    if delay > 0 {
+        sleep(Duration::from_secs(delay));
+    }
+    let bytes = fbink.screenshot(ImageOutputFormat::Png)?;
+    let timestamp = Local::now().format("%Y%m%d-%H%M-%S");
+    let filename = format!("{}-{timestamp}.png", slugify(fbink.state().device_id));
+    let out_dir = config.user_dir.join("screenshots");
+    fs::create_dir_all(&out_dir)?;
+    let out_file = out_dir.join(&filename);
+    fs::write(out_file, bytes)?;
+    let display = out_dir.display().to_string();
+    let relpath = display.trim_start_matches("/mnt/onboard/");
+    if use_fbink {
+        fbink.print(&format!("Saved {filename} to\n{relpath}"))?;
+    }
+    println!("Saved {filename} to {relpath}");
     Ok(())
 }
