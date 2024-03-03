@@ -49,7 +49,7 @@ impl ActionManager {
         if !self.actions.data.contains_key(&path_segment) {
             self.actions.data.insert(
                 path_segment.clone(),
-                Action {
+                ActionOptions {
                     sort_value: opts.sort_value.clone().unwrap_or(opts.name.clone()),
                     name: opts.name.clone(),
                     keyboard_shortcut: opts.keyboard_shortcut,
@@ -63,7 +63,7 @@ impl ActionManager {
         let rotation = self.fbink.current_rotation()?;
         let recording = ActionRecording::record(&opts, rotation)?;
         if rotation != self.fbink.current_rotation()? {
-            return Err(anyhow!("The rotation changed during recording."))
+            return Err(anyhow!("The rotation changed during recording."));
         }
         let response = RecordActionResponse {
             name: action.name.clone(),
@@ -87,9 +87,9 @@ impl ActionManager {
         }
         let rotation = self.fbink.current_rotation()?;
         let recording = self.recordings.get(path_segment, rotation)?;
-        let action = self.actions.data.get(path_segment).unwrap();
+        let opts = self.actions.data.get(path_segment).unwrap();
         recording.play(path_segment)?;
-        self.play_wait_until = Utc::now() + action.post_playback_delay;
+        self.play_wait_until = Utc::now() + opts.post_playback_delay;
         Ok(())
     }
 
@@ -102,6 +102,16 @@ impl ActionManager {
         } else {
             Err(anyhow!("No action exists for {path_segment}"))
         }
+    }
+
+    fn update(&mut self, path_segment: String, opts: ActionOptions) -> Result<()> {
+        if !self.actions.data.contains_key(&path_segment) {
+            return Err(anyhow!("{path_segment} doesn't exist"));
+        }
+
+        self.actions.data.insert(path_segment, opts);
+        self.actions.write()?;
+        Ok(())
     }
 
     pub fn manage(&mut self) {
@@ -121,13 +131,13 @@ impl ActionManager {
                 }
                 Some(ActionMsg::List { resp }) => {
                     let mut actions = Vec::new();
-                    for (path_segment, action) in self.actions.data.iter() {
+                    for (path_segment, opts) in self.actions.data.iter() {
                         actions.push(ListActionResponse {
-                            name: action.name.clone(),
+                            name: opts.name.clone(),
                             path_segment: path_segment.clone(),
-                            sort_value: action.sort_value.clone(),
-                            keyboard_shortcut: action.keyboard_shortcut,
-                            post_playback_delay: action.post_playback_delay,
+                            sort_value: opts.sort_value.clone(),
+                            keyboard_shortcut: opts.keyboard_shortcut,
+                            post_playback_delay: opts.post_playback_delay,
                         })
                     }
                     actions.sort_by(|a, b| a.sort_value.partial_cmp(&b.sort_value).unwrap());
@@ -139,6 +149,16 @@ impl ActionManager {
                     let result = self.delete(&path_segment);
                     if resp.send(result).is_err() {
                         warn!("Unable to send Delete result. Receiver dropped")
+                    }
+                }
+                Some(ActionMsg::Update {
+                    path_segment,
+                    opts,
+                    resp,
+                }) => {
+                    let result = self.update(path_segment, opts);
+                    if resp.send(result).is_err() {
+                        warn!("Unable to send Update result. Receiver dropped")
                     }
                 }
                 None => break,
@@ -163,6 +183,11 @@ pub enum ActionMsg {
         path_segment: String,
         resp: oneshot::Sender<Result<()>>,
     },
+    Update {
+        path_segment: String,
+        opts: ActionOptions,
+        resp: oneshot::Sender<Result<()>>,
+    },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -178,7 +203,7 @@ pub struct RecordActionResponse {
 
 #[serde_with::serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Action {
+pub struct ActionOptions {
     pub name: String,
     pub sort_value: String,
     pub keyboard_shortcut: Option<keyboard_types::Code>,
@@ -405,12 +430,12 @@ fn sleep(duration: Duration) {
 
 pub struct ActionsFile {
     pub path: PathBuf,
-    pub data: BTreeMap<String, Action>,
+    pub data: BTreeMap<String, ActionOptions>,
 }
 
 impl ActionsFile {
     pub fn load(path: PathBuf) -> Result<Self> {
-        let actions = if path.exists() {
+        let data = if path.exists() {
             debug!("Loading actions from {}", path.display());
             let file = fs::read_to_string(&path)
                 .with_context(|| format!("Failed to read actions from {}", &path.display()))?;
@@ -423,7 +448,7 @@ impl ActionsFile {
         };
         Ok(Self {
             path,
-            data: actions,
+            data,
         })
     }
 
@@ -449,7 +474,7 @@ pub struct RecordingsFile {
 
 impl RecordingsFile {
     pub fn load(path: PathBuf) -> Result<Self> {
-        let recordings = if path.exists() {
+        let data = if path.exists() {
             debug!("Loading recordings from {}", path.display());
             let bytes = fs::read(&path)
                 .with_context(|| format!("Failed to read recordings from {}", &path.display()))?;
@@ -462,7 +487,7 @@ impl RecordingsFile {
         };
         Ok(Self {
             path,
-            data: recordings,
+            data,
         })
     }
     pub fn write(&self) -> Result<()> {
