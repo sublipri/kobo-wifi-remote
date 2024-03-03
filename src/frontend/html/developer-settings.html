@@ -1,0 +1,52 @@
+<!--
+SPDX-FileCopyrightText: 2023 sublipri <sublipri@proton.me>
+SPDX-License-Identifier: GPL-3.0-only
+-->
+<!doctype html>
+<html>
+  <head>
+    <title>Kobo Wi-Fi Remote</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8" />
+    <link href="/styles/main.css" rel="stylesheet" />
+  </head>
+  <body style="margin: 0; padding: 0">
+    <p>
+      Press a button to toggle the value of a setting.
+      <a
+        href="https://wiki.mobileread.com/wiki/Kobo_Configuration_Options#.5BDeveloperSettings.5D"
+      >See here</a
+        >
+        for a description of options. A reboot might be required for changes to take effect.
+      </p>
+      {% for setting in settings -%}
+        {% let new_value -%}
+        {% let btn_action -%}
+        {% if setting.value.as_deref() == Some("true") -%}
+          {% let new_value = "false" -%}
+          {% let btn_action = "Disable" -%}
+        {% else -%}
+          {% let new_value = "true" -%}
+          {% let btn_action = "Enable" -%}
+        {% endif -%}
+        <p>
+          <button
+            type="button"
+            id="btn-{{setting.key}}"
+            onclick="changeKoboSetting('{{setting.section}}', '{{setting.key}}', '{{new_value}}')"
+          >
+            {{btn_action}} {{setting.key}}
+          </button>
+        </p>
+      {% endfor -%}
+      <p>
+        <a href="javascript:history.back()"
+        ><button type="button" id="go-back">Go Back</button></a
+          >
+        </p>
+      </body>
+      <script type="module">
+        import { changeSetting } from "/js/lib.js";
+        window.changeKoboSetting = changeSetting;
+      </script>
+    </html>

@@ -1,6 +1,6 @@
 use askama::Template;
 
-use crate::actions::ListActionResponse;
+use crate::{actions::ListActionResponse, kobo_config::KoboConfigSetting};
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -21,6 +21,12 @@ pub struct PageTurner {}
 #[derive(Template)]
 #[template(path = "troubleshooting.html")]
 pub struct Troubleshooting {}
+
+#[derive(Template)]
+#[template(path = "developer-settings.html")]
+pub struct DeveloperSettings {
+    pub settings: Vec<KoboConfigSetting>,
+}
 
 #[derive(Template)]
 #[template(path = "remote-control.html")]

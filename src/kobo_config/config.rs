@@ -183,6 +183,8 @@ impl KoboConfigFile {
                         } else {
                             updated.push_str(&format!("{key_to_set}={new_val}\n"));
                         }
+                        let path = self.opts.path.display();
+                        debug!("{key_to_set} was unset in {path}. Setting it to {new_val}",);
                         was_changed = true;
                     }
                     current_section = None;
@@ -200,7 +202,10 @@ impl KoboConfigFile {
 
         if !was_changed {
             if let Some(new_val) = new_val {
+                let path = self.opts.path.display();
+                debug!("No {section} section exists in {path}. Creating.");
                 updated.push_str(&format!("\n[{section}]\n"));
+                debug!("{key_to_set} was unset in {path}. Setting it to {new_val}",);
                 updated.push_str(&format!("{key_to_set}={new_val}\n"));
                 was_changed = true;
             }
