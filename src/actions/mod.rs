@@ -4,7 +4,7 @@ use anyhow::Result;
 use axum::{
     extract::{Path as AxumPath, State},
     response::IntoResponse,
-    routing::{delete, get, post},
+    routing::{delete, get, post, put},
     Json, Router,
 };
 use tokio::sync::oneshot;
@@ -22,6 +22,7 @@ pub fn routes() -> Router<AppState> {
         .route("/actions", post(record_action))
         .route("/actions/:path_segment", get(play_action_handler))
         .route("/actions/:path_segment", delete(delete_action))
+        .route("/actions/:path_segment", put(update_action))
         .route("/left", get(prev_page))
         .route("/right", get(next_page))
 }
@@ -74,6 +75,24 @@ async fn delete_action(
     state.tx.send(msg).await?;
     rx.await??;
     debug!("Successfully delete action");
+    Ok(())
+}
+
+async fn update_action(
+    State(state): State<AppState>,
+    AxumPath(path_segment): AxumPath<String>,
+    Json(opts): Json<ActionOptions>,
+) -> Result<impl IntoResponse, AppError> {
+    debug!("Received request to update action {path_segment}");
+    let (tx, rx) = oneshot::channel();
+    let msg = ActionMsg::Update {
+        path_segment,
+        opts,
+        resp: tx,
+    };
+    state.tx.send(msg).await?;
+    rx.await??;
+    debug!("Successfully updated action");
     Ok(())
 }
 

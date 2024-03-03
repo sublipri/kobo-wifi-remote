@@ -11,24 +11,58 @@ SPDX-License-Identifier: GPL-3.0-only
     <link href="/styles/main.css" rel="stylesheet" />
   </head>
   <body style="margin: 0; padding: 0">
-    <p></p>
-    <form id="delete-action">
-      <select form="delete-action" name="path-segment" id="select-action">
-        <option value="">--Please select an action--</option>
-        {% for action in actions -%}
-        <option value="{{action.path_segment}}">{{-action.name}}</option>
-        {% endfor %}
-      </select>
+    <form id="manage-actions-form">
+      <p>
+        <select
+          form="manage-actions-form"
+          name="select-action"
+          id="select-action"
+        >
+          <option value="">--Select an action--</option>
+          {% for action in actions -%}
+          <option value="{{action.path_segment}}">{{-action.name}}</option>
+          {% endfor %}
+        </select>
+      </p>
+      <label for="name">Display Name:</label><br />
+      <input
+        type="text"
+        id="name"
+        name="name"
+        title="The name to display in the remote control"
+        required
+      /><br />
+      <label for="sort-value">Sort Value:</label><br />
+      <input
+        type="text"
+        id="sort-value"
+        name="sort_value"
+        title="Used to sort the button in the remote control."
+        required
+      /><br />
+      <label for="keyboard-shortcut">Keyboard Shortcut:</label><br />
+      <input
+        type="text"
+        id="keyboard-shortcut"
+        name="keyboard_shortcut"
+        title="A keyboard shortcut to trigger the action in the remote control"
+      /><br />
+      <label for="post-playback-delay">Post-Playback Delay (ms):</label><br />
+      <input
+        type="number"
+        id="post-playback-delay"
+        name="post_playback_delay"
+        class="input-number"
+        title="How long in milliseconds to wait after replaying the input before playing another action"
+        step="50"
+      /><br />
+      <p>
+        <button type="button" id="update-action-btn">Update Action</button>
+      </p>
       <p>
         <button type="button" id="delete-action-btn">Delete Action</button>
       </p>
     </form>
-    <div id="result-modal" class="modal">
-      <div class="modal-content">
-        <span id="result-close-modal" class="close">&times;</span>
-        <p></p>
-      </div>
-    </div>
     <p>
       <a href="javascript:history.back()"
         ><button type="button" id="go-back">Go Back</button></a
@@ -36,10 +70,63 @@ SPDX-License-Identifier: GPL-3.0-only
     </p>
   </body>
   <script type="module">
-    import { displayMsg, sleep } from "/js/lib.js";
+    import { displayMsg, processForm, sleep } from "/js/lib.js";
     document.getElementById("delete-action-btn").onclick = async () => {
       await deleteAction();
     };
+    resetUpdateBtn();
+
+    const shortcutInput = document.getElementById("keyboard-shortcut");
+    shortcutInput.addEventListener(
+      "keydown",
+      (event) => {
+        event.preventDefault();
+        shortcutInput.value = `${event.code}`;
+      },
+      true,
+    );
+
+    let selectElement = document.getElementById("select-action");
+    selectElement.addEventListener("change", async (event) => {
+      if (event.target.value === "") {
+        resetUpdateBtn();
+        return;
+      }
+      const response = await fetch("/actions");
+      const actions = await response.json();
+      const action = actions.find((a) => a.path_segment === event.target.value);
+      document.getElementById("name").value = action.name;
+      document.getElementById("sort-value").value = action.sort_value;
+      document.getElementById("keyboard-shortcut").value =
+        action.keyboard_shortcut;
+      document.getElementById("post-playback-delay").value =
+        action.post_playback_delay;
+
+      document.getElementById("update-action-btn").onclick = async () => {
+        let form = document.getElementById("manage-actions-form");
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+        const data = processForm(form);
+        const payload = JSON.stringify(data);
+        const config = {
+          method: "PUT",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: payload,
+        };
+        const response = await fetch(`/actions/${action.path_segment}`, config);
+        if (response.ok) {
+          displayMsg(`Updated ${action.path_segment}`, 1000);
+          reset();
+        } else {
+          displayMsg(await response.text());
+        }
+      };
+    });
 
     async function deleteAction() {
       const selection = document.getElementById("select-action");
@@ -49,10 +136,9 @@ SPDX-License-Identifier: GPL-3.0-only
         const response = await fetch(`/actions/${path_segment}`, {
           method: "DELETE",
         });
-        const result = document.getElementById("result-modal");
-        const p = result.querySelector("p");
         if (response.ok) {
           displayMsg(`Deleted ${path_segment}`, 1000);
+          reset();
           await sleep(1000);
           location.reload();
         } else {
@@ -61,6 +147,20 @@ SPDX-License-Identifier: GPL-3.0-only
       } else {
         displayMsg("Select an action", 1000);
       }
+    }
+
+    function reset() {
+      document.getElementById("select-action").options.selectedIndex = 0;
+      document.getElementById("name").value = "";
+      document.getElementById("sort-value").value = "";
+      document.getElementById("keyboard-shortcut").value = "";
+      document.getElementById("post-playback-delay").value = "";
+      resetUpdateBtn();
+    }
+    function resetUpdateBtn() {
+      document.getElementById("update-action-btn").onclick = function () {
+        displayMsg("Select an action", 1000);
+      };
     }
   </script>
 </html>
