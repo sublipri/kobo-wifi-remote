@@ -43,6 +43,8 @@ KERNEL==\"wlan*\", ACTION==\"add\", RUN+=\"$MAIN_BIN uninstall\""
 mkdir ./build/root/mnt/onboard/.adds/nm
 cat >./build/root/mnt/onboard/.adds/nm/wifiremote <<EOF
 menu_item :main :Wi-Fi Remote (toggle) :cmd_output :1000:"$MAIN_BIN" toggle
+menu_item :main :Screenshot (1s delay) :cmd_spawn :quiet:"$MAIN_BIN" screenshot --fbink --delay 1
+menu_item :reader :Screenshot (2s delay) :cmd_spawn :quiet:"$MAIN_BIN" screenshot --fbink --delay 2
 # menu_item :main :Wi-Fi Remote (enable) :cmd_output :1000:"$MAIN_BIN" enable --now
 # menu_item :main :Wi-Fi Remote (disable) :cmd_output :1000:"$MAIN_BIN" disable --now
 # menu_item :main :Wi-Fi Remote (status) :cmd_output :1000:"$MAIN_BIN" status

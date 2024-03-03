@@ -9,6 +9,7 @@ use axum::{
 };
 use chrono::Local;
 use fbink_rs::ImageOutputFormat;
+use slug::slugify;
 
 pub fn routes() -> Router<AppState> {
     Router::new().route("/screenshot", get(screenshot))
@@ -18,7 +19,7 @@ async fn screenshot(State(state): State<AppState>) -> Result<impl IntoResponse, 
     state.fbink.reinit()?;
     let bytes = state.fbink.screenshot(ImageOutputFormat::Png)?;
     let timestamp = Local::now().format("%Y%m%d-%H%M-%S");
-    let filename = format!("{} {timestamp}.png", state.fbink.state().device_id);
+    let filename = format!("{}-{timestamp}.png", slugify(state.fbink.state().device_id));
     let mut headers = HeaderMap::new();
     headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("image/png"));
     let value = HeaderValue::from_str(&format!("inline; filename=\"{}\"", filename))?;
