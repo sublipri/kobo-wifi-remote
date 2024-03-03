@@ -74,32 +74,27 @@ export function processForm(form) {
   return data;
 }
 
-// TODO: Make this generic and add frontend for editing other settings
-// async function forceWifi() {
-//   const request = {
-//     method: "POST",
-//     headers: {
-//       Accept: "application/json",
-//       "Content-Type": "application/json",
-//     },
-//     body: JSON.stringify([
-//       {
-//         section: "DeveloperSettings",
-//         key: "ForceWifiOn",
-//         value: "true",
-//       },
-//     ]),
-//   };
-//   const response = await fetch("/kobo-config", request);
-//   const result = document.getElementById("result-modal");
-//   const p = result.querySelector("p");
-//   if (response.ok) {
-//     p.innerHTML = "Set ForceWifiOn to true";
-//     result.style.display = "block";
-//     await new Promise((r) => setTimeout(r, 1500));
-//     result.style.display = "none";
-//   } else {
-//     p.innerHTML = await response.text();
-//     result.style.display = "block";
-//   }
-// }
+export async function changeSetting(section, key, value) {
+  console.log(value);
+  const request = {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify([
+      {
+        section: section,
+        key: key,
+        value: value,
+      },
+    ]),
+  };
+  const response = await fetch("/kobo-config", request);
+  if (response.ok) {
+    console.log(response);
+    location.reload();
+  } else {
+    displayMsg(await response.text());
+  }
+}

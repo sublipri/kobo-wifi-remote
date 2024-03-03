@@ -1,4 +1,4 @@
-use crate::{actions::ActionMsg, errors::AppError, server::AppState};
+use crate::{actions::ActionMsg, errors::AppError, kobo_config::KoboConfigFile, server::AppState};
 
 use std::collections::HashMap;
 
@@ -28,6 +28,7 @@ pub fn routes() -> Router<AppState> {
         )
         .route("/manage-actions", get(manage_actions))
         .route("/remote-control", get(remote_control))
+        .route("/developer-settings", get(developer_settings))
         .route("/styles/main.css", get(main_css))
         .route("/styles/remote.css", get(remote_css))
         .route("/js/record-action.js", get(record_action_js))
@@ -68,6 +69,12 @@ async fn remote_control(State(state): State<AppState>) -> Result<impl IntoRespon
         actions,
         shortcuts_json,
     })
+}
+
+async fn developer_settings() -> Result<impl IntoResponse, AppError> {
+    let config = KoboConfigFile::open(Default::default())?;
+    let settings = config.get_values();
+    Ok(templates::DeveloperSettings { settings })
 }
 
 async fn manage_actions(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
