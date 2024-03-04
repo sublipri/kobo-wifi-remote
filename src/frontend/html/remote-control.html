@@ -16,14 +16,17 @@ SPDX-License-Identifier: GPL-3.0-only
     <title>Kobo Wi-Fi Remote</title>
   </head>
   <body style="margin: 0; padding: 0">
+    {% if actions.len() == 0 -%}
+	  {% include "no-actions.html" -%}
+    {% endif -%}
     <div class="button-container">
       {% for action in actions -%}
-	  {% let color -%}
-	  {% if loop.index % 2 == 0 -%}
-        {% let color = "#33b249" -%}
-	  {% else -%}
-	    {% let color = "#5783db "-%}
-	  {% endif -%}
+        {% let color -%}
+        {% if loop.index % 2 == 0 -%}
+          {% let color = "#5783db "-%}
+        {% else -%}
+          {% let color = "#33b249" -%}
+        {% endif -%}
       <button
         class="remote-button colored-button"
         type="button"
