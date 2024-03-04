@@ -16,7 +16,10 @@ pub struct CustomActions {}
 
 #[derive(Template)]
 #[template(path = "page-turner.html")]
-pub struct PageTurner {}
+pub struct PageTurner {
+    pub next: Option<ListActionResponse>,
+    pub prev: Option<ListActionResponse>,
+}
 
 #[derive(Template)]
 #[template(path = "troubleshooting.html")]

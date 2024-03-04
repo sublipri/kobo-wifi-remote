@@ -17,7 +17,7 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", get(|| async { templates::Index {} }))
         .route("/setup", get(|| async { templates::Setup {} }))
-        .route("/page-turner", get(|| async { templates::PageTurner {} }))
+        .route("/page-turner", get(page_turner))
         .route(
             "/troubleshooting",
             get(|| async { templates::Troubleshooting {} }),
@@ -69,6 +69,22 @@ async fn remote_control(State(state): State<AppState>) -> Result<impl IntoRespon
         actions,
         shortcuts_json,
     })
+}
+
+async fn page_turner(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let (tx, rx) = oneshot::channel();
+    state.tx.send(ActionMsg::List { resp: tx }).await?;
+    let actions = rx.await?;
+    let mut next = None;
+    let mut prev = None;
+    for action in actions.into_iter() {
+        match action.path_segment.as_str() {
+            "next-page" => next = Some(action),
+            "prev-page" => prev = Some(action),
+            _ => continue,
+        }
+    }
+    Ok(templates::PageTurner { next, prev })
 }
 
 async fn developer_settings() -> Result<impl IntoResponse, AppError> {
