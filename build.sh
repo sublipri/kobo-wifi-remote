@@ -7,7 +7,6 @@ set -e
 VERSION=$(grep -m 1 -o '[0-9][0-9.]\+\S*' README.md)
 UDEV_DIR="/etc/udev/rules.d"
 BIN_DIR="/opt/wifiremote/bin"
-LICENSE_DIR="/opt/wifiremote/licenses"
 DATA_DIR="/opt/wifiremote/data"
 USER_DIR="/mnt/onboard/.adds/wifiremote"
 UDEV_FILE="$DATA_DIR/udev.rules"
@@ -23,13 +22,11 @@ fi
 
 cross build --release --target "$TARGET"
 
-for d in "$UDEV_DIR" "$DATA_DIR" "$BIN_DIR" "$LICENSE_DIR" "$USER_DIR"; do
+for d in "$UDEV_DIR" "$DATA_DIR" "$BIN_DIR" "$USER_DIR"; do
 	mkdir -p ./build/root/"$d"
 done
 
 cp ./target/"$TARGET"/release/kobo-wifi-remote ./build/root/"$MAIN_BIN"
-mkdir ./build/root/"$LICENSE_DIR"/wifiremote
-cp -t ./build/root/"$LICENSE_DIR"/wifiremote ./LICENSE
 
 # create udev rule to start wifiremote when a network device is added
 UDEV_RULES="KERNEL==\"eth*\", ACTION==\"add\", RUN+=\"$MAIN_BIN start\"
@@ -81,6 +78,7 @@ if [ "$1" = 'install' ]; then
 elif [ "$1" = 'release' ]; then
 	release_zip="KoboWiFiRemote-$VERSION.zip"
 	pandoc -o ./build/README.html README.md
+	cp -t ./build/ ./LICENSE
 	rm -r ./build/root
 	(cd ./build && zip --test --move "$release_zip" ./*)
 	mkdir -p ./build/root/"$UDEV_DIR"
