@@ -78,10 +78,19 @@ export async function recordAction(form, id) {
   reset_alerts();
   if (response.ok) {
     const recorded = await response.json();
-    displayMsg(
-      `Recorded ${recorded.name} in ${recorded.rotation} rotation`,
-      1500,
-    );
+    const is_page_turn =
+      data.path_segment === "next-page" || data.path_segment === "prev-page";
+    if (is_page_turn && !recorded.was_optimized) {
+      displayMsg(
+        `Recorded ${recorded.name} in ${recorded.rotation} rotation. <strong>Warning</strong>: 
+         Optimization failed. For faster page turns, try again and perform a quick swipe with a single finger`,
+      );
+    } else {
+      displayMsg(
+        `Recorded ${recorded.name} in ${recorded.rotation} rotation`,
+        1500,
+      );
+    }
   } else {
     displayMsg(await response.text());
   }
