@@ -49,6 +49,8 @@ export async function displayMsg(msg, timeout) {
 
 export function closeMsg() {
   const modal = document.getElementById("msg-modal");
+  const p = modal.querySelector("p");
+  p.innerHTML = "";
   modal.style.display = "none";
 }
 
