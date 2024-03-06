@@ -165,7 +165,7 @@ pub fn optimize_events(events: &mut Vec<InputEvent>, syn_gap: Duration) -> bool 
         // Skip actions more complex than a single tap or swipe
         || events.iter().filter(|ev| ev.is_code(&EV_KEY(BTN_TOUCH))).count() > 2
         // Skip multi-touch gestures
-        || events.iter().any(|ev| ev.is_code(&EV_ABS(ABS_MT_SLOT)))
+        || events.iter().filter(|ev| ev.is_code(&EV_ABS(ABS_MT_SLOT))).count() > 1
     {
         debug!("Skipped optimizing events");
         return false;
