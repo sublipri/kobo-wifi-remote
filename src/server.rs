@@ -12,7 +12,7 @@ use axum::{
     http::{header, HeaderValue},
     Router, ServiceExt,
 };
-use fbink_rs::{FbInk, FbInkConfig};
+use fbink_rs::{config::Font, FbInk, FbInkConfig};
 use tokio::sync::mpsc;
 use tower::Layer;
 use tower_http::{
@@ -29,12 +29,16 @@ pub struct AppState {
 #[tokio::main(flavor = "current_thread")]
 pub async fn serve() -> Result<()> {
     let config = Config::default();
-    init(&config)?;
     let (tx, rx) = mpsc::channel(32);
     let fbink = Arc::new(FbInk::new(FbInkConfig {
+        is_centered: true,
+        is_halfway: true,
+        is_padded: true,
+        font: Font::Fatty,
         to_syslog: true,
         ..Default::default()
     })?);
+    init(&config, fbink.clone())?;
     let state = AppState {
         tx,
         fbink: fbink.clone(),

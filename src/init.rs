@@ -7,20 +7,21 @@ use std::{
     io::{BufRead, BufReader, LineWriter, Write},
     path::PathBuf,
     process::Command,
-    thread::sleep,
+    sync::Arc,
+    thread::{self, sleep},
     time::Duration,
 };
 
 use anyhow::{anyhow, Context, Result};
-use fbink_rs::{config::Font, FbInk, FbInkConfig};
+use fbink_rs::FbInk;
 use tracing::{debug, trace};
 
-pub fn init(config: &Config) -> Result<()> {
+pub fn init(config: &Config, fbink: Arc<FbInk>) -> Result<()> {
     merge_files(config.file_list(), config.file_list().with_extension("new"))?;
     merge_files(config.dir_list(), config.dir_list().with_extension("new"))?;
 
     if !config.action_file().exists() && !Config::is_dev_mode() {
-        first_run(config)?;
+        first_run(config, fbink)?;
     }
     Ok(())
 }
@@ -49,7 +50,7 @@ pub fn merge_files(old_files: PathBuf, new_files: PathBuf) -> Result<()> {
     Ok(())
 }
 
-pub fn first_run(config: &Config) -> Result<()> {
+pub fn first_run(config: &Config, fbink: Arc<FbInk>) -> Result<()> {
     let mut kobo_config = KoboConfigFile::open(Default::default())?;
     if kobo_config.set_value("DeveloperSettings", "ForceWifiOn", Some("true"))? {
         kobo_config.write()?;
@@ -70,29 +71,27 @@ pub fn first_run(config: &Config) -> Result<()> {
                 .with_context(|| format!("Failed to write {}", &meta.display()))?;
         }
     }
+    let port = config.port;
+    thread::spawn(move || display_ip_address(port, fbink));
+    Ok(())
+}
 
-    let fbink = FbInk::new(FbInkConfig {
-        is_centered: true,
-        is_halfway: true,
-        is_padded: true,
-        font: Font::Fatty,
-        to_syslog: true,
-        ..Default::default()
-    })?;
-
+pub fn display_ip_address(port: u32, fbink: Arc<FbInk>) -> Result<()> {
     let mut msg = format!("\nWi-Fi Remote {} initialized.\n\n ", Config::version());
     msg.push_str("Visit this address to setup your device:\n\n");
     let mut addr = wait_for_ip_address()?;
-    if config.port != 80 {
-        addr.push_str(&format!(":{}", config.port))
+    if port != 80 {
+        addr.push_str(&format!(":{}", port))
     }
     msg.push_str(&format!("http://{addr}\n "));
+    sleep(Duration::from_millis(2000));
     fbink.print(&msg)?;
     Ok(())
 }
 
 pub fn wait_for_ip_address() -> Result<String> {
-    let max_attempts = 120;
+    debug!("Waiting for IP Address");
+    let max_attempts = 600;
     let retry_after = Duration::from_millis(1000);
     let mut attempts = 0;
     loop {
