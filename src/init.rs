@@ -55,6 +55,22 @@ pub fn first_run(config: &Config) -> Result<()> {
         kobo_config.write()?;
     }
 
+    let koreader_path = PathBuf::from("/mnt/onboard/.adds/koreader/plugins");
+    if koreader_path.exists() {
+        let wfr_path = koreader_path.join("wifiremote.koplugin");
+        if !wfr_path.exists() {
+            let p = wfr_path.display();
+            debug!("KOReader installation detected. Writing plugin files to {p}");
+            fs::create_dir(&wfr_path).with_context(|| format!("Failed to create {p}"))?;
+            let main = wfr_path.join("main.lua");
+            let meta = wfr_path.join("_meta.lua");
+            fs::write(&main, include_str!("../wifiremote.koplugin/main.lua"))
+                .with_context(|| format!("Failed to write {}", &main.display()))?;
+            fs::write(&meta, include_str!("../wifiremote.koplugin/_meta.lua"))
+                .with_context(|| format!("Failed to write {}", &meta.display()))?;
+        }
+    }
+
     let fbink = FbInk::new(FbInkConfig {
         is_centered: true,
         is_halfway: true,
