@@ -20,13 +20,21 @@ if [ -d ./build ]; then
 	rm -r ./build
 fi
 
-cross build --release --target "$TARGET"
+if [ "$1" = 'release' ]; then
+	# Trims about 2MB off the binary size but much slower to build
+	PROFILE="release-minsized"
+else
+	# Debug builds are too big for the rootfs so use release for testing
+	PROFILE="release"
+fi
+
+cross build --profile "$PROFILE" --target "$TARGET"
 
 for d in "$UDEV_DIR" "$DATA_DIR" "$BIN_DIR" "$USER_DIR"; do
 	mkdir -p ./build/root/"$d"
 done
 
-cp ./target/"$TARGET"/release/kobo-wifi-remote ./build/root/"$MAIN_BIN"
+cp ./target/"$TARGET"/"$PROFILE"/kobo-wifi-remote ./build/root/"$MAIN_BIN"
 
 # create udev rule to start wifiremote when a network device is added
 UDEV_RULES="KERNEL==\"eth*\", ACTION==\"add\", RUN+=\"$MAIN_BIN start\"
