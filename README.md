@@ -16,7 +16,7 @@ There are some screenshots in the thread on [MobileRead](https://www.mobileread.
 
 ## Installation
 
-1. Download the [latest release](https://github.com/sublipri/kobo-wifi-remote/releases/latest) and extract the .zip file.
+1. Download the [latest release](https://github.com/sublipri/kobo-wifi-remote/releases/download/v0.2.0/KoboWiFiRemote-0.2.0.zip) and extract the .zip file.
 1. Connect your e-reader to your computer with a USB cable and browse its storage.
 1. Set your computer to show hidden files.
 1. Copy the `KoboRoot.tgz` file to the hidden `.kobo` directory on your e-reader.
