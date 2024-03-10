@@ -1,5 +1,13 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
+use anyhow::Result;
+use figment::{
+    providers::{Env, Format, Serialized, Toml},
+    Figment,
+};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
     pub data_dir: PathBuf,
     pub udev_dir: PathBuf,
@@ -19,6 +27,13 @@ impl Default for Config {
 }
 
 impl Config {
+    pub fn from_path(path: &Path) -> Result<Self> {
+        let config = Figment::from(Serialized::defaults(Self::default()))
+            .merge(Toml::file(path))
+            .merge(Env::prefixed("WIFIREMOTE_"))
+            .extract()?;
+        Ok(config)
+    }
     pub fn action_file(&self) -> PathBuf {
         self.user_dir.join("actions.toml")
     }

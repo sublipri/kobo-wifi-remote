@@ -1,10 +1,10 @@
 use crate::{config::Config, server};
 
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::thread::sleep;
 use std::time::Duration;
+use std::{env, fs};
 
 use anyhow::{anyhow, Context, Result};
 use chrono::Local;
@@ -20,6 +20,13 @@ use tracing::{info, warn};
 #[derive(Parser, Debug, Deserialize, Serialize)]
 #[command(version, about, long_about = None, arg_required_else_help = true)]
 pub struct Cli {
+    /// Path to the config file
+    #[arg(
+        long,
+        short,
+        default_value = "/mnt/onboard/.adds/wifiremote/config.toml"
+    )]
+    pub config_path: PathBuf,
     #[command(subcommand)]
     #[serde(skip)]
     pub command: Option<Commands>,
@@ -66,7 +73,13 @@ pub enum Commands {
 
 pub fn cli() -> Result<()> {
     let args = Cli::parse();
-    let config = Config::default();
+
+    let config_path = if let Some(path) = env::var_os("WIFIREMOTE_CONFIG_PATH") {
+        path.into()
+    } else {
+        args.config_path
+    };
+    let config = Config::from_path(&config_path)?;
 
     let Some(subcommand) = &args.command else {
         return Ok(());
@@ -108,7 +121,7 @@ pub fn cli() -> Result<()> {
             }
         }
         Commands::Uninstall { dry_run } => uninstall(&config, *dry_run)?,
-        Commands::Serve => server::serve()?,
+        Commands::Serve => server::serve(&config)?,
         Commands::Screenshot { delay, use_fbink } => screenshot(&config, *delay, *use_fbink)?,
     }
     Ok(())

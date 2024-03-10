@@ -27,8 +27,7 @@ pub struct AppState {
 }
 
 #[tokio::main(flavor = "current_thread")]
-pub async fn serve() -> Result<()> {
-    let config = Config::default();
+pub async fn serve(config: &Config) -> Result<()> {
     let (tx, rx) = mpsc::channel(32);
     let fbink = Arc::new(FbInk::new(FbInkConfig {
         is_centered: true,
@@ -38,7 +37,7 @@ pub async fn serve() -> Result<()> {
         to_syslog: true,
         ..Default::default()
     })?);
-    init(&config, fbink.clone())?;
+    init(config, fbink.clone())?;
     let state = AppState {
         tx,
         fbink: fbink.clone(),
