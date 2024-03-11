@@ -303,7 +303,9 @@ impl ActionRecording {
             .read(true)
             .write(true)
             .open(&self.dev_path)
-            .unwrap();
+            .with_context(|| {
+                format!("Failed to open {} to write events", self.dev_path.display())
+            })?;
 
         debug!(
             "Writing events for {} to {}",
@@ -311,7 +313,8 @@ impl ActionRecording {
             &self.dev_path.display()
         );
         for ev in &self.events {
-            f.write_all(&ev.buf).unwrap();
+            f.write_all(&ev.buf)
+                .with_context(|| format!("Failed to write event to {}", self.dev_path.display()))?;
             if let Some(dur) = ev.sleep_duration {
                 sleep(dur);
             }
