@@ -7,6 +7,9 @@ use axum::{
     routing::{delete, get, post, put},
     Json, Router,
 };
+use chrono::{Duration, Utc};
+use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DurationMilliSeconds};
 use tokio::sync::oneshot;
 use tracing::debug;
 
@@ -28,11 +31,11 @@ pub fn routes() -> Router<AppState> {
 }
 
 async fn next_page(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
-    Ok(play_action("next-page".into(), &state).await?)
+    play_action("next-page".into(), &state).await
 }
 
 async fn prev_page(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
-    Ok(play_action("prev-page".into(), &state).await?)
+    play_action("prev-page".into(), &state).await
 }
 
 async fn get_actions(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
@@ -46,20 +49,35 @@ async fn play_action_handler(
     State(state): State<AppState>,
     AxumPath(path_segment): AxumPath<String>,
 ) -> Result<impl IntoResponse, AppError> {
-    Ok(play_action(path_segment, &state).await?)
+    play_action(path_segment, &state).await
 }
 
-async fn play_action(path_segment: String, state: &AppState) -> Result<()> {
+async fn play_action(
+    path_segment: String,
+    state: &AppState,
+) -> Result<impl IntoResponse, AppError> {
+    let start = Utc::now();
     debug!("Received request to play action {path_segment}");
     let (tx, rx) = oneshot::channel();
     let msg = ActionMsg::Play {
-        path_segment,
+        path_segment: path_segment.clone(),
         resp: tx,
     };
     state.tx.send(msg).await?;
     rx.await??;
     debug!("Successfully played action");
-    Ok(())
+    Ok(Json(PlayActionResponse {
+        path_segment,
+        time_taken: Utc::now() - start,
+    }))
+}
+
+#[serde_with::serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct PlayActionResponse {
+    path_segment: String,
+    #[serde_as(as = "DurationMilliSeconds<i64>")]
+    time_taken: Duration,
 }
 
 async fn delete_action(
