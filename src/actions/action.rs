@@ -13,6 +13,7 @@ use evdev_rs::enums::EV_KEY::BTN_TOUCH;
 use evdev_rs::util::event_code_to_int;
 use evdev_rs::{DeviceWrapper, InputEvent, TimeVal};
 use fbink_rs::{CanonicalRotation, FbInk};
+use nix::libc;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationMicroSeconds, DurationMilliSeconds};
 use slug::slugify;
@@ -385,6 +386,58 @@ impl Default for ActionEvent {
     }
 }
 
+// Might have been better to just store InputEvents and convert to bytes when writing to the
+// device, but can't change that easily now without breaking existing action recordings.
+// libc::time_t is deprecated but not sure how to deal with it so ignoring it for now
+// https://github.com/rust-lang/libc/issues/1848
+#[allow(deprecated)]
+impl ActionEvent {
+    /// Convert the ActionEvent back into an InputEvent
+    pub fn input_event(&self) -> Result<InputEvent> {
+        let i = std::mem::size_of::<libc::time_t>();
+        let expected = (i * 2) + 8;
+        if self.buf.len() != expected {
+            return Err(anyhow!(
+                "Can't convert ActionEvent. Expected len of {expected} but found {}",
+                self.buf.len()
+            ));
+        }
+        let time = libc::timeval {
+            tv_sec: libc::time_t::from_ne_bytes(self.buf[..i].try_into()?),
+            tv_usec: libc::suseconds_t::from_ne_bytes(self.buf[i..i + i].try_into()?),
+        };
+        let rem = &self.buf[i + i..];
+
+        let raw = libc::input_event {
+            time,
+            type_: libc::__u16::from_ne_bytes([rem[0], rem[1]]),
+            code: libc::__u16::from_ne_bytes([rem[2], rem[3]]),
+            value: i32::from_ne_bytes([rem[4], rem[5], rem[6], rem[7]]),
+        };
+
+        Ok(InputEvent::from_raw(&raw))
+    }
+
+    pub fn set_value(&mut self, value: i32) {
+        let mut buf = self.buf.clone();
+        buf.truncate(buf.len() - 4);
+        buf.extend(value.to_ne_bytes());
+        self.buf = buf;
+    }
+
+    pub fn set_time(&mut self, duration: Duration) {
+        let mut buf = Vec::with_capacity(self.buf.len());
+        let seconds = duration.num_seconds() as libc::time_t;
+        let microseconds = duration.num_microseconds().unwrap() as libc::suseconds_t % 1_000_000;
+        buf.extend(seconds.to_ne_bytes());
+        buf.extend(microseconds.to_ne_bytes());
+        let i = std::mem::size_of::<libc::time_t>();
+        buf.extend_from_slice(&self.buf[i + i..]);
+        self.buf = buf;
+    }
+}
+
+#[allow(deprecated)]
 fn create_action_events(events: &[InputEvent]) -> Vec<ActionEvent> {
     let mut action_events = Vec::new();
     if events.is_empty() {
@@ -397,8 +450,9 @@ fn create_action_events(events: &[InputEvent]) -> Vec<ActionEvent> {
         let (ev_type, ev_code) = event_code_to_int(&ev.event_code);
         let ev_time = parse_timeval(ev.time);
         let time_since_start = ev_time - start_time;
-        let seconds = time_since_start.num_seconds() as usize;
-        let microseconds = time_since_start.num_microseconds().unwrap() as usize % 1_000_000;
+        let seconds = time_since_start.num_seconds() as libc::time_t;
+        let microseconds =
+            time_since_start.num_microseconds().unwrap() as libc::suseconds_t % 1_000_000;
         let mut ae = ActionEvent::default();
         ae.buf.extend(seconds.to_ne_bytes());
         ae.buf.extend(microseconds.to_ne_bytes());
