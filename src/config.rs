@@ -1,18 +1,22 @@
+use crate::actions::arbitrary::InputOptions;
+use crate::{errors::AppError, server::AppState};
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
+use axum::{extract::State, response::IntoResponse, routing::get, Router};
 use figment::{
     providers::{Env, Format, Serialized, Toml},
     Figment,
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
     pub data_dir: PathBuf,
     pub udev_dir: PathBuf,
     pub user_dir: PathBuf,
     pub port: u32,
+    pub arbitrary: InputOptions,
 }
 
 impl Default for Config {
@@ -22,6 +26,7 @@ impl Default for Config {
             udev_dir: "/etc/udev/rules.d".into(),
             user_dir: "/mnt/onboard/.adds/wifiremote".into(),
             port: 80,
+            arbitrary: Default::default(),
         }
     }
 }
@@ -58,4 +63,12 @@ impl Config {
     pub fn is_dev_mode() -> bool {
         std::env::var("WIFIREMOTE_DEV_MODE").is_ok_and(|v| v == "1")
     }
+}
+
+pub fn routes() -> Router<AppState> {
+    Router::new().route("/config", get(get_config))
+}
+
+async fn get_config(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    Ok(serde_json::to_string(&state.config)?)
 }

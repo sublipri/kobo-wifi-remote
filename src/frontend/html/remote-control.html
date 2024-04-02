@@ -38,11 +38,17 @@ SPDX-License-Identifier: GPL-3.0-only
       </button>
       {% endfor -%}
     </div>
+    {% if enable_arbitrary -%}
+    {% include "arbitrary-input.html" -%}
+    {% endif -%}
   </body>
   <script id="shortcuts-json" type="application/json">
     {{shortcuts_json|safe}}
   </script>
   <script type="module">
+    {% if enable_arbitrary -%}
+    import { detectionActive } from "/js/arbitrary-input.js";
+    {% endif -%}
     import { playAction } from "/js/lib.js";
     const json = document.getElementById("shortcuts-json").textContent;
     const shortcuts = JSON.parse(json);
@@ -51,12 +57,19 @@ SPDX-License-Identifier: GPL-3.0-only
       const btnId = "btn-" + path_segment;
       const btn = document.getElementById(btnId);
       btn.onclick = async () => {
-        await playAction(path_segment);
+        if (event.detail <= 1) {
+          await playAction(path_segment);
+        }
       };
       if (!key) {
         continue;
       }
       window.addEventListener("keydown", (e) => {
+        {% if enable_arbitrary -%}
+        if (detectionActive) {
+          return
+        }
+        {% endif -%}
         if (e.code === key) {
           btn.click();
         }

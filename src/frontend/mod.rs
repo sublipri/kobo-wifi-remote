@@ -34,6 +34,7 @@ pub fn routes() -> Router<AppState> {
         .route("/js/record-action.js", get(record_action_js))
         .route("/js/colored-buttons.js", get(colored_buttons))
         .route("/js/lib.js", get(lib_js))
+        .route("/js/arbitrary-input.js", get(arbitrary_input_js))
 }
 
 async fn main_css() -> impl IntoResponse {
@@ -56,6 +57,10 @@ async fn colored_buttons() -> impl IntoResponse {
     (js_header(), include_str!("js/colored-buttons.js"))
 }
 
+async fn arbitrary_input_js() -> impl IntoResponse {
+    (js_header(), include_str!("js/arbitrary-input.js"))
+}
+
 async fn remote_control(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
     let (tx, rx) = oneshot::channel();
     state.tx.send(ActionMsg::List { resp: tx }).await?;
@@ -68,6 +73,7 @@ async fn remote_control(State(state): State<AppState>) -> Result<impl IntoRespon
     Ok(templates::RemoteControl {
         actions,
         shortcuts_json,
+        enable_arbitrary: state.config.arbitrary.enabled,
     })
 }
 
@@ -84,7 +90,11 @@ async fn page_turner(State(state): State<AppState>) -> Result<impl IntoResponse,
             _ => continue,
         }
     }
-    Ok(templates::PageTurner { next, prev })
+    Ok(templates::PageTurner {
+        next,
+        prev,
+        enable_arbitrary: state.config.arbitrary.enabled,
+    })
 }
 
 async fn developer_settings() -> Result<impl IntoResponse, AppError> {

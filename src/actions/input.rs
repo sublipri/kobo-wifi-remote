@@ -96,6 +96,7 @@ fn read_events(
                 // https://docs.rs/evdev-rs/0.6.1/evdev_rs/struct.Device.html#method.next_event
                 if tx.send(ReadEventsMsg::Error).is_err() {
                     warn!("Failed to send ReadEventsMsg::Error to receiver");
+                    return;
                 }
             }
         }
@@ -251,11 +252,11 @@ fn drain_last_batch(events: &mut Vec<InputEvent>) -> Vec<InputEvent> {
     }
 }
 
-fn is_x_coord(ev: &InputEvent) -> bool {
+pub fn is_x_coord(ev: &InputEvent) -> bool {
     ev.is_code(&EV_ABS(ABS_X)) || ev.is_code(&EV_ABS(ABS_MT_POSITION_X))
 }
 
-fn is_y_coord(ev: &InputEvent) -> bool {
+pub fn is_y_coord(ev: &InputEvent) -> bool {
     ev.is_code(&EV_ABS(ABS_Y)) || ev.is_code(&EV_ABS(ABS_MT_POSITION_Y))
 }
 

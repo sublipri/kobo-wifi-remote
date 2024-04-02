@@ -19,6 +19,7 @@ pub struct CustomActions {}
 pub struct PageTurner {
     pub next: Option<ListActionResponse>,
     pub prev: Option<ListActionResponse>,
+    pub enable_arbitrary: bool,
 }
 
 #[derive(Template)]
@@ -36,6 +37,7 @@ pub struct DeveloperSettings {
 pub struct RemoteControl {
     pub actions: Vec<ListActionResponse>,
     pub shortcuts_json: String,
+    pub enable_arbitrary: bool,
 }
 
 #[derive(Template)]

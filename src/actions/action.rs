@@ -1,4 +1,5 @@
 use super::input::{get_input_devices, optimize_events, read_input};
+use crate::util::sleep;
 
 use std::collections::BTreeMap;
 use std::fs::{self, File};
@@ -22,10 +23,10 @@ use tracing::{debug, warn};
 
 pub struct ActionManager {
     pub actions: ActionsFile,
-    pub fbink: Arc<FbInk>,
+    fbink: Arc<FbInk>,
     pub recordings: RecordingsFile,
-    pub rx: mpsc::Receiver<ActionMsg>,
-    pub play_wait_until: DateTime<Utc>,
+    rx: mpsc::Receiver<ActionMsg>,
+    play_wait_until: DateTime<Utc>,
 }
 
 impl ActionManager {
@@ -299,15 +300,16 @@ impl ActionRecording {
         })
     }
 
-    pub fn play(&self, path_segment: &str) -> Result<()> {
-        let mut f = File::options()
+    pub fn open_device(&self) -> Result<File> {
+        File::options()
             .read(true)
             .write(true)
             .open(&self.dev_path)
-            .with_context(|| {
-                format!("Failed to open {} to write events", self.dev_path.display())
-            })?;
+            .with_context(|| format!("Failed to open {} to write events", self.dev_path.display()))
+    }
 
+    pub fn play(&self, path_segment: &str) -> Result<()> {
+        let mut f = self.open_device()?;
         debug!(
             "Writing events for {} to {}",
             path_segment,
@@ -478,13 +480,6 @@ fn parse_timeval(tv: TimeVal) -> DateTime<Utc> {
     DateTime::from_timestamp(tv.tv_sec.into(), nsec).unwrap()
 }
 
-fn sleep(duration: Duration) {
-    if duration > Duration::zero() {
-        debug!("Sleeping for {}ms", duration.num_milliseconds());
-        std::thread::sleep(duration.to_std().unwrap());
-    }
-}
-
 pub struct ActionsFile {
     pub path: PathBuf,
     pub data: BTreeMap<String, ActionOptions>,
@@ -503,10 +498,7 @@ impl ActionsFile {
             debug!("No action file at {}", path.display());
             BTreeMap::new()
         };
-        Ok(Self {
-            path,
-            data,
-        })
+        Ok(Self { path, data })
     }
 
     pub fn write(&self) -> Result<()> {
@@ -542,10 +534,7 @@ impl RecordingsFile {
             debug!("No recordings file at {}", path.display());
             BTreeMap::new()
         };
-        Ok(Self {
-            path,
-            data,
-        })
+        Ok(Self { path, data })
     }
     pub fn write(&self) -> Result<()> {
         let bytes = bincode::serialize(&self.data).context("Failed to serialize recordings")?;
@@ -559,6 +548,18 @@ impl RecordingsFile {
             .with_context(|| format!("Failed to write recordings to {}", tmp.display()))?;
         fs::rename(&tmp, &self.path).context("Failed to rename temporary recordings file")?;
         Ok(())
+    }
+
+    pub fn get_any(&self, path_segment: &str) -> Result<&ActionRecording> {
+        let Some(recordings) = self.data.get(path_segment) else {
+            return Err(anyhow!("No recordings for {path_segment}"));
+        };
+        for r in recordings.iter() {
+            if r.is_some() {
+                return Ok(r.as_ref().unwrap());
+            }
+        }
+        Err(anyhow!("No recordings for {path_segment}"))
     }
 
     pub fn get(&self, path_segment: &str, rotation: CanonicalRotation) -> Result<&ActionRecording> {

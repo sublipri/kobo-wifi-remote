@@ -1,5 +1,5 @@
 use crate::{
-    actions::{ActionManager, ActionMsg},
+    actions::{arbitrary::InputManager, ActionManager, ActionMsg},
     config::Config,
     init::init,
 };
@@ -24,6 +24,7 @@ use tracing::info;
 pub struct AppState {
     pub tx: mpsc::Sender<ActionMsg>,
     pub fbink: Arc<FbInk>,
+    pub config: Config,
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -41,11 +42,22 @@ pub async fn serve(config: &Config) -> Result<()> {
     let state = AppState {
         tx,
         fbink: fbink.clone(),
+        config: config.clone(),
     };
     let mut manager =
         ActionManager::from_path(config.action_file(), config.recordings_file(), fbink, rx)?;
+    if config.arbitrary.enabled {
+        if let Ok(template) = manager.recordings.get_any("next-page") {
+            let mut input_manager =
+                InputManager::new(template.clone(), state.fbink.clone(), config)?;
+            thread::spawn(move || input_manager.manage());
+        } else {
+            info!("No recording to use as template. Not running arbitrary input manager.");
+        }
+    }
     thread::spawn(move || manager.manage());
     let app = Router::new()
+        .merge(crate::config::routes())
         .merge(crate::actions::routes())
         .merge(crate::frontend::routes())
         .merge(crate::kobo_config::routes())

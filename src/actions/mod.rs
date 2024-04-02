@@ -14,6 +14,7 @@ use tokio::sync::oneshot;
 use tracing::debug;
 
 mod action;
+pub mod arbitrary;
 mod input;
 
 pub fn routes() -> Router<AppState> {

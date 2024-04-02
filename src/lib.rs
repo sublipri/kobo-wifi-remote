@@ -8,3 +8,4 @@ pub mod kobo_config;
 pub mod logging;
 pub mod screenshot;
 pub mod server;
+pub mod util;

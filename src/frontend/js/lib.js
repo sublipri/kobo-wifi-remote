@@ -76,6 +76,15 @@ export function processForm(form) {
   return data;
 }
 
+export async function getConfig() {
+  const response = await fetch("/config");
+  if (response.ok) {
+    return await response.json();
+  } else {
+    displayMsg(await response.text());
+  }
+}
+
 export async function changeSetting(section, key, value) {
   console.log(value);
   const request = {

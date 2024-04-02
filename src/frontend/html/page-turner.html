@@ -68,25 +68,40 @@ SPDX-License-Identifier: GPL-3.0-only
 	    {{ next.name }}
       </button>
     </div>
+    {% if enable_arbitrary -%}
+    {% include "arbitrary-input.html" -%}
 	{% endif -%}
+    {% endif -%}
   </body>
   {% if next.is_some() && prev.is_some() -%}
   {% let next = next.as_ref().unwrap() -%}
   {% let prev = prev.as_ref().unwrap() -%}
   <script type="module">
-    import { playAction } from "/js/lib.js";
+    {% if enable_arbitrary -%}
+    import { detectionActive } from "/js/arbitrary-input.js";
+    {% endif -%}
+    import { playAction, closeMsg } from "/js/lib.js";
     const next_btn = document.getElementById("next-page");
     const prev_btn = document.getElementById("prev-page");
-    next_btn.onclick = async () => {
-      await playAction("next-page");
+    next_btn.onclick = async (event) => {
+      if (event.detail <= 1) {
+        await playAction("next-page");
+      }
     };
-    prev_btn.onclick = async () => {
-      await playAction("prev-page");
+    prev_btn.onclick = async (event) => {
+      if (event.detail <= 1) {
+        await playAction("prev-page");
+      }
     };
 
     window.addEventListener(
       "keydown",
       (event) => {
+        {% if enable_arbitrary -%}
+        if (detectionActive) {
+          return
+        }
+        {% endif -%}
         switch (event.code) {
           case "Right":
           case "ArrowRight":
@@ -105,13 +120,13 @@ SPDX-License-Identifier: GPL-3.0-only
             prev_btn.click();
             break;
           case "Escape":
-            close.click();
+            closeMsg();
             break;
         }
       },
-      true,
+      false,
     );
   </script>
   <script src="/js/colored-buttons.js"></script>
-  {% endif %}
+  {% endif -%}
 </html>
