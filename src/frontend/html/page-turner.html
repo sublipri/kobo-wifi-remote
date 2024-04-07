@@ -35,98 +35,98 @@ SPDX-License-Identifier: GPL-3.0-only
     </style>
   </head>
   <body style="margin: 0; padding: 0">
-	{% if next.is_none() || prev.is_none() -%}
-	  {% include "no-actions.html" -%}
-	{% else -%}
-	  {% let next = next.as_ref().unwrap() -%}
-	  {% let prev = prev.as_ref().unwrap() -%}
-    <div class="button-container">
-      <button
-        class="remote-button colored-button"
-        id="prev-page"
-		{%- if let Some(shortcut) = prev.keyboard_shortcut %}
-		title="Previous Page (Shortcut: {{shortcut}})"
-		{% else -%}
-        title="Previous Page (Shortcut: ArrowLeft or KeyA)"
-		{% endif -%}
-        style="background-color: #5783db"
-        type="button"
-      >
-	    {{ prev.name }}
-      </button>
-      <button
-        class="remote-button colored-button"
-        id="next-page"
-		{%- if let Some(shortcut) = next.keyboard_shortcut %}
-		title="Next Page (Shortcut: {{shortcut}})"
-		{% else -%}
-		title="Next Page (Shortcut: ArrowRight or KeyD)"
-		{% endif -%}
-        style="background-color: #33b249"
-        type="button"
-      >
-	    {{ next.name }}
-      </button>
-    </div>
-    {% if enable_arbitrary -%}
-    {% include "arbitrary-input.html" -%}
-	{% endif -%}
+    {% if next.is_none() || prev.is_none() -%}
+      {% include "no-actions.html" -%}
+    {% else -%}
+      {% let next = next.as_ref().unwrap() -%}
+      {% let prev = prev.as_ref().unwrap() -%}
+      <div class="button-container">
+        <button
+          class="remote-button colored-button"
+          id="prev-page"
+          {%- if let Some(shortcut) = prev.keyboard_shortcut %}
+            title="Previous Page (Shortcut: {{shortcut}})"
+          {% else -%}
+            title="Previous Page (Shortcut: ArrowLeft or KeyA)"
+          {% endif -%}
+          style="background-color: #5783db"
+          type="button"
+        >
+          {{ prev.name }}
+        </button>
+        <button
+          class="remote-button colored-button"
+          id="next-page"
+          {%- if let Some(shortcut) = next.keyboard_shortcut %}
+            title="Next Page (Shortcut: {{shortcut}})"
+          {% else -%}
+            title="Next Page (Shortcut: ArrowRight or KeyD)"
+          {% endif -%}
+          style="background-color: #33b249"
+          type="button"
+        >
+          {{ next.name }}
+        </button>
+      </div>
+      {% if enable_arbitrary -%}
+        {% include "arbitrary-input.html" -%}
+      {% endif -%}
     {% endif -%}
   </body>
   {% if next.is_some() && prev.is_some() -%}
-  {% let next = next.as_ref().unwrap() -%}
-  {% let prev = prev.as_ref().unwrap() -%}
-  <script type="module">
-    {% if enable_arbitrary -%}
-    import { detectionActive } from "/js/arbitrary-input.js";
-    {% endif -%}
-    import { playAction, closeMsg } from "/js/lib.js";
-    const next_btn = document.getElementById("next-page");
-    const prev_btn = document.getElementById("prev-page");
-    next_btn.onclick = async (event) => {
-      if (event.detail <= 1) {
-        await playAction("next-page");
-      }
-    };
-    prev_btn.onclick = async (event) => {
-      if (event.detail <= 1) {
-        await playAction("prev-page");
-      }
-    };
+    {% let next = next.as_ref().unwrap() -%}
+    {% let prev = prev.as_ref().unwrap() -%}
+    <script type="module">
+      {% if enable_arbitrary -%}
+        import { detectionActive } from "/js/arbitrary-input.js";
+      {% endif -%}
+      import { playAction, closeMsg } from "/js/lib.js";
+      const next_btn = document.getElementById("next-page");
+      const prev_btn = document.getElementById("prev-page");
+      next_btn.onclick = async (event) => {
+        if (event.detail <= 1) {
+          await playAction("next-page");
+        }
+      };
+      prev_btn.onclick = async (event) => {
+        if (event.detail <= 1) {
+          await playAction("prev-page");
+        }
+      };
 
-    window.addEventListener(
-      "keydown",
-      (event) => {
-        {% if enable_arbitrary -%}
-        if (detectionActive) {
-          return
-        }
-        {% endif -%}
-        switch (event.code) {
-          case "Right":
-          case "ArrowRight":
-          case "KeyD":
-		  {% if let Some(shortcut) = next.keyboard_shortcut -%}
-		  case "{{ shortcut.to_string() }}":
-		  {%- endif %}
-            next_btn.click();
-            break;
-          case "Left":
-          case "ArrowLeft":
-          case "KeyA":
-		  {% if let Some(shortcut) = prev.keyboard_shortcut -%}
-		  case "{{ shortcut.to_string() }}":
-		  {%- endif %}
-            prev_btn.click();
-            break;
-          case "Escape":
-            closeMsg();
-            break;
-        }
-      },
-      false,
-    );
-  </script>
-  <script src="/js/colored-buttons.js"></script>
+      window.addEventListener(
+        "keydown",
+        (event) => {
+          {% if enable_arbitrary -%}
+            if (detectionActive) {
+              return
+            }
+          {% endif -%}
+          switch (event.code) {
+            case "Right":
+            case "ArrowRight":
+            case "KeyD":
+              {% if let Some(shortcut) = next.keyboard_shortcut -%}
+                case "{{ shortcut.to_string() }}":
+              {%- endif %}
+              next_btn.click();
+              break;
+            case "Left":
+            case "ArrowLeft":
+            case "KeyA":
+              {% if let Some(shortcut) = prev.keyboard_shortcut -%}
+                case "{{ shortcut.to_string() }}":
+              {%- endif %}
+              prev_btn.click();
+              break;
+            case "Escape":
+              closeMsg();
+              break;
+          }
+        },
+        false,
+      );
+    </script>
+    <script src="/js/colored-buttons.js"></script>
   {% endif -%}
 </html>

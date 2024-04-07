@@ -17,7 +17,7 @@ SPDX-License-Identifier: GPL-3.0-only
   </head>
   <body style="margin: 0; padding: 0">
     {% if actions.len() == 0 -%}
-	  {% include "no-actions.html" -%}
+      {% include "no-actions.html" -%}
     {% endif -%}
     <div class="button-container">
       {% for action in actions -%}
@@ -27,19 +27,19 @@ SPDX-License-Identifier: GPL-3.0-only
         {% else -%}
           {% let color = "#33b249" -%}
         {% endif -%}
-      <button
-        class="remote-button colored-button"
-        type="button"
-        id="btn-{{action.path_segment}}"
-        style="background-color: {{color}}"
-        title="{{action.name}} (Shortcut: {{action.shortcut_name()}})"
-      >
-        {{-action.name}}
-      </button>
+        <button
+          class="remote-button colored-button"
+          type="button"
+          id="btn-{{action.path_segment}}"
+          style="background-color: {{color}}"
+          title="{{action.name}} (Shortcut: {{action.shortcut_name()}})"
+        >
+          {{-action.name}}
+        </button>
       {% endfor -%}
     </div>
     {% if enable_arbitrary -%}
-    {% include "arbitrary-input.html" -%}
+      {% include "arbitrary-input.html" -%}
     {% endif -%}
   </body>
   <script id="shortcuts-json" type="application/json">
@@ -47,7 +47,7 @@ SPDX-License-Identifier: GPL-3.0-only
   </script>
   <script type="module">
     {% if enable_arbitrary -%}
-    import { detectionActive } from "/js/arbitrary-input.js";
+      import { detectionActive } from "/js/arbitrary-input.js";
     {% endif -%}
     import { playAction } from "/js/lib.js";
     const json = document.getElementById("shortcuts-json").textContent;
@@ -66,9 +66,9 @@ SPDX-License-Identifier: GPL-3.0-only
       }
       window.addEventListener("keydown", (e) => {
         {% if enable_arbitrary -%}
-        if (detectionActive) {
-          return
-        }
+          if (detectionActive) {
+            return
+          }
         {% endif -%}
         if (e.code === key) {
           btn.click();
