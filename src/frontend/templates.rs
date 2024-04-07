@@ -1,4 +1,5 @@
 use askama::Template;
+use chrono::Duration;
 
 use super::index::IndexItem;
 use crate::{actions::ListActionResponse, kobo_config::KoboConfigSetting};
@@ -50,4 +51,12 @@ pub struct RemoteControl {
 #[template(path = "manage-actions.html")]
 pub struct ManageActions {
     pub actions: Vec<ListActionResponse>,
+}
+
+#[derive(Template)]
+#[template(path = "auto-turner.html")]
+pub struct AutoTurner {
+    pub next: Option<ListActionResponse>,
+    pub prev: Option<ListActionResponse>,
+    pub delay: Duration,
 }

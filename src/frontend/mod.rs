@@ -30,6 +30,7 @@ pub fn routes() -> Router<AppState> {
         )
         .route("/manage-actions", get(manage_actions))
         .route("/remote-control", get(remote_control))
+        .route("/auto-turner", get(auto_turner))
         .route("/developer-settings", get(developer_settings))
         .route("/styles/main.css", get(main_css))
         .route("/styles/remote.css", get(remote_css))
@@ -37,6 +38,7 @@ pub fn routes() -> Router<AppState> {
         .route("/js/colored-buttons.js", get(colored_buttons))
         .route("/js/lib.js", get(lib_js))
         .route("/js/arbitrary-input.js", get(arbitrary_input_js))
+        .route("/js/auto-turner.js", get(auto_turner_js))
 }
 
 async fn main_css() -> impl IntoResponse {
@@ -108,6 +110,26 @@ async fn page_turner(State(state): State<AppState>) -> Result<impl IntoResponse,
         enable_arbitrary: state.config.arbitrary_input.enabled,
         prompt_fullscreen: state.config.prompt_fullscreen,
     })
+}
+
+async fn auto_turner(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let (tx, rx) = oneshot::channel();
+    state.tx.send(ActionMsg::List { resp: tx }).await?;
+    let actions = rx.await?;
+    let mut next = None;
+    let mut prev = None;
+    for action in actions.into_iter() {
+        match action.path_segment.as_str() {
+            "next-page" => next = Some(action),
+            "prev-page" => prev = Some(action),
+            _ => continue,
+        }
+    }
+    Ok(templates::AutoTurner { next, prev, delay: state.config.auto_turner_delay })
+}
+
+async fn auto_turner_js() -> impl IntoResponse {
+    (js_header(), include_str!("js/auto-turner.js"))
 }
 
 async fn developer_settings() -> Result<impl IntoResponse, AppError> {

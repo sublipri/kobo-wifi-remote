@@ -23,6 +23,7 @@ impl Default for IndexOptions {
                 IndexItem::new("custom-actions", "Custom Actions", true),
                 IndexItem::new("remote-control", "Remote Control", true),
                 IndexItem::new("screenshot", "Screenshot", true),
+                IndexItem::new("auto-turner", "Auto Turner", true),
                 IndexItem::new("developer-settings", "Developer Settings", true),
                 IndexItem::new("troubleshooting", "Troubleshooting", true),
             ],

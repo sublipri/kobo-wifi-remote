@@ -5,12 +5,15 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use axum::{extract::State, response::IntoResponse, routing::get, Router};
+use chrono::Duration;
 use figment::{
     providers::{Env, Format, Serialized, Toml},
     Figment,
 };
 use serde::{Deserialize, Serialize};
+use serde_with::DurationSeconds;
 
+#[serde_with::serde_as]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
     pub data_dir: PathBuf,
@@ -18,6 +21,8 @@ pub struct Config {
     pub user_dir: PathBuf,
     pub port: u32,
     pub prompt_fullscreen: bool,
+    #[serde_as(as = "DurationSeconds<i64>")]
+    pub auto_turner_delay: Duration,
     pub arbitrary_input: InputOptions,
     pub index: IndexOptions,
 }
@@ -32,6 +37,7 @@ impl Default for Config {
             prompt_fullscreen: false,
             arbitrary_input: Default::default(),
             index: Default::default(),
+            auto_turner_delay: Duration::seconds(120),
         }
     }
 }

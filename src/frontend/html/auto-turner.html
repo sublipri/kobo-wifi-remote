@@ -1,0 +1,58 @@
+<!--
+SPDX-FileCopyrightText: 2023 sublipri <sublipri@proton.me>
+SPDX-License-Identifier: GPL-3.0-only
+-->
+<!doctype html>
+<html>
+  <head>
+    <title>Kobo Wi-Fi Remote</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="UTF-8" />
+    <link href="/styles/main.css" rel="stylesheet" />
+  </head>
+  <body style="margin: 0; padding: 0">
+    {% if next.is_none() || prev.is_none() -%}
+      {% include "no-actions.html" -%}
+    {% else -%}
+      {% let next = next.as_ref().unwrap() -%}
+      {% let prev = prev.as_ref().unwrap() -%}
+    <br />
+    <div style="text-align: center">
+      <input
+        type="number"
+        id="page-turn-delay"
+        class="input-number"
+        value="120"
+        min="1"
+        step="10"
+        title="How long in seconds to wait between page turns"
+      />
+    </div>
+    <p style="font-size: 24px">
+      Next turn in <span id="next-turn-value">120</span> seconds.
+    </p>
+    <p>
+      <button type="button" name="toggle-auto-turner" id="toggle-auto-turner">
+        Start
+      </button>
+    </p>
+    <p>
+      <button type="button" name="pause-auto-turner" id="pause-auto-turner">
+        Pause
+      </button>
+    </p>
+    <p>
+      <button type="button" id="prev-page">{{ prev.name }}</button>
+    </p>
+    <p>
+      <button type="button" id="next-page">{{ next.name }}</button>
+    </p>
+    <p>
+      <a href="javascript:history.back()"
+        ><button type="button" id="go-back">Go Back</button></a
+      >
+    </p>
+    {% endif -%}
+  </body>
+  <script type="module" src="/js/auto-turner.js"></script>
+</html>
