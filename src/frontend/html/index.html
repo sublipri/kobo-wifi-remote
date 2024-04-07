@@ -18,76 +18,30 @@ SPDX-License-Identifier: GPL-3.0-only
       }
       button {
         width: 100vw;
-        height: 20vh;
-        line-height: 20vh;
+        height: {{button_height}}vh;
+        line-height: {{button_height}}vh;
       }
     </style>
   </head>
   <body style="margin: 0; padding: 0">
     <div class="link-container">
-      <a id="setup" href="/setup/">
+      {% for item in items -%}
+        {% let color -%}
+        {% if loop.index % 2 == 0 -%}
+          {% let color = "#33b249" -%}
+        {% else -%}
+          {% let color = "#5783db" -%}
+        {% endif -%}
+      <a id="{{item.href}}" href="/{{item.href}}/">
         <button
-          style="background-color: #5783db"
+          style="background-color: {{color}}"
           type="button"
           class="colored-button"
         >
-          Initial Setup
+          {{item.name}}
         </button>
       </a>
-      <a id="page-turner" href="/page-turner/">
-        <button
-          style="background-color: #33b249"
-          type="button"
-          class="colored-button"
-        >
-          Page Turner
-        </button>
-      </a>
-      <a id="custom-actions" href="/custom-actions/">
-        <button
-          style="background-color: #5783db"
-          type="button"
-          class="colored-button"
-        >
-          Custom Actions
-        </button>
-      </a>
-      <a id="remote-control" href="/remote-control/">
-        <button
-          style="background-color: #33b249"
-          type="button"
-          class="colored-button"
-        >
-          Remote Control
-        </button>
-      </a>
-      <a id="screenshot" href="/screenshot/">
-        <button
-          style="background-color: #5783db"
-          type="button"
-          class="colored-button"
-        >
-          Screenshot
-        </button>
-      </a>
-      <a id="developer-settings" href="/developer-settings/">
-        <button
-          style="background-color: #33b249"
-          type="button"
-          class="colored-button"
-        >
-          Developer Settings
-        </button>
-      </a>
-      <a id="troubleshooting" href="/troubleshooting/">
-        <button
-          style="background-color: #5783db"
-          type="button"
-          class="colored-button"
-        >
-          Troubleshooting
-        </button>
-      </a>
+      {% endfor -%}
     </div>
   </body>
   <script src="/js/colored-buttons.js"></script>

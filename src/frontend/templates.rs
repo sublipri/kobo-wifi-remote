@@ -1,10 +1,14 @@
 use askama::Template;
 
+use super::index::IndexItem;
 use crate::{actions::ListActionResponse, kobo_config::KoboConfigSetting};
 
 #[derive(Template)]
 #[template(path = "index.html")]
-pub struct Index {}
+pub struct Index<'a> {
+    pub button_height: f32,
+    pub items: Vec<&'a IndexItem>,
+}
 
 #[derive(Template)]
 #[template(path = "setup.html")]

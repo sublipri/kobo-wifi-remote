@@ -1,4 +1,5 @@
 use crate::actions::arbitrary::InputOptions;
+use crate::frontend::index::IndexOptions;
 use crate::{errors::AppError, server::AppState};
 use std::path::{Path, PathBuf};
 
@@ -17,6 +18,7 @@ pub struct Config {
     pub user_dir: PathBuf,
     pub port: u32,
     pub arbitrary: InputOptions,
+    pub index: IndexOptions,
 }
 
 impl Default for Config {
@@ -27,6 +29,7 @@ impl Default for Config {
             user_dir: "/mnt/onboard/.adds/wifiremote".into(),
             port: 80,
             arbitrary: Default::default(),
+            index: Default::default(),
         }
     }
 }

@@ -2,6 +2,7 @@ use crate::{actions::ActionMsg, errors::AppError, kobo_config::KoboConfigFile, s
 
 use std::collections::HashMap;
 
+use askama::Template;
 use axum::{
     extract::State,
     http::{header, HeaderMap, HeaderValue},
@@ -12,10 +13,11 @@ use axum::{
 use tokio::sync::oneshot;
 
 mod templates;
+pub mod index;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
-        .route("/", get(|| async { templates::Index {} }))
+        .route("/", get(index))
         .route("/setup", get(|| async { templates::Setup {} }))
         .route("/page-turner", get(page_turner))
         .route(
@@ -59,6 +61,15 @@ async fn colored_buttons() -> impl IntoResponse {
 
 async fn arbitrary_input_js() -> impl IntoResponse {
     (js_header(), include_str!("js/arbitrary-input.js"))
+}
+
+async fn index(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let items = state.config.index.items.iter().filter(|i| i.enabled);
+    let index = templates::Index {
+        items: items.collect(),
+        button_height: state.config.index.button_height,
+    };
+    Ok((html_header(), index.render()?))
 }
 
 async fn remote_control(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
@@ -111,14 +122,19 @@ async fn manage_actions(State(state): State<AppState>) -> Result<impl IntoRespon
 }
 
 fn js_header() -> HeaderMap {
-    let mut headers = HeaderMap::with_capacity(1);
-    let value = HeaderValue::from_static("text/javascript");
-    headers.insert(header::CONTENT_TYPE, value);
-    headers
+    make_header("text/javascript")
 }
 
 fn css_header() -> HeaderMap {
+    make_header("text/css")
+}
+
+fn html_header() -> HeaderMap {
+    make_header("text/html")
+}
+
+fn make_header(value: &'static str) -> HeaderMap {
     let mut headers = HeaderMap::with_capacity(1);
-    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/css"));
+    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static(value));
     headers
 }
