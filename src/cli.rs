@@ -44,12 +44,14 @@ pub enum Commands {
     Restart,
     /// Enable the server to run at boot
     Enable {
-        #[arg(long, help = "Start the server if it's not running")]
+        /// Start the server if it's not running
+        #[arg(long)]
         now: bool,
     },
     /// Disable the server from running at boot
     Disable {
-        #[arg(long, help = "Stop the server if it's running")]
+        /// Stop the server if it's running
+        #[arg(long)]
         now: bool,
     },
     /// Display the status of the server
@@ -58,7 +60,8 @@ pub enum Commands {
     Toggle,
     /// Uninstall wifiremote
     Uninstall {
-        #[arg(long, help = "Print what will be deleted without removing anything")]
+        /// Print what will be deleted without removing anything
+        #[arg(long)]
         dry_run: bool,
     },
     Screenshot {
