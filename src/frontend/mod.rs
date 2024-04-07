@@ -84,7 +84,7 @@ async fn remote_control(State(state): State<AppState>) -> Result<impl IntoRespon
     Ok(templates::RemoteControl {
         actions,
         shortcuts_json,
-        enable_arbitrary: state.config.arbitrary.enabled,
+        enable_arbitrary: state.config.arbitrary_input.enabled,
     })
 }
 
@@ -104,7 +104,7 @@ async fn page_turner(State(state): State<AppState>) -> Result<impl IntoResponse,
     Ok(templates::PageTurner {
         next,
         prev,
-        enable_arbitrary: state.config.arbitrary.enabled,
+        enable_arbitrary: state.config.arbitrary_input.enabled,
     })
 }
 

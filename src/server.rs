@@ -46,7 +46,7 @@ pub async fn serve(config: &Config) -> Result<()> {
     };
     let mut manager =
         ActionManager::from_path(config.action_file(), config.recordings_file(), fbink, rx)?;
-    if config.arbitrary.enabled {
+    if config.arbitrary_input.enabled {
         if let Ok(template) = manager.recordings.get_any("next-page") {
             let mut input_manager =
                 InputManager::new(template.clone(), state.fbink.clone(), config)?;

@@ -179,7 +179,7 @@ impl InputManager {
         let start_events = get_event_batch(&mut iter)?;
         let move_events = get_event_batch(&mut iter)?;
         let stop_events = get_event_batch(&mut iter)?;
-        let opts = config.arbitrary.clone();
+        let opts = config.arbitrary_input.clone();
         let current_coord = None;
         let cursor_path = if opts.custom_cursor_path.is_relative() {
             config.user_dir.join(&opts.custom_cursor_path)
