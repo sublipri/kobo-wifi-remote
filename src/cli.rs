@@ -24,7 +24,7 @@ pub struct Cli {
     #[arg(
         long,
         short,
-        default_value = "/mnt/onboard/.adds/wifiremote/config.toml"
+        default_value = "/mnt/onboard/.adds/wifiremote/wifiremote.toml"
     )]
     pub config_path: PathBuf,
     #[command(subcommand)]
@@ -68,6 +68,11 @@ pub enum Commands {
         /// Display the output path on the e-reader using FBInk
         #[arg(long = "fbink")]
         use_fbink: bool,
+    },
+    /// Create a config file with the default values
+    CreateConfig {
+        #[arg(long, short, default_value = "wifiremote.toml")]
+        path: PathBuf,
     },
 }
 
@@ -123,6 +128,10 @@ pub fn cli() -> Result<()> {
         Commands::Uninstall { dry_run } => uninstall(&config, *dry_run)?,
         Commands::Serve => server::serve(&config)?,
         Commands::Screenshot { delay, use_fbink } => screenshot(&config, *delay, *use_fbink)?,
+        Commands::CreateConfig { path } => {
+            let config = Config::default();
+            fs::write(path, toml::to_string_pretty(&config)?)?
+        }
     }
     Ok(())
 }
