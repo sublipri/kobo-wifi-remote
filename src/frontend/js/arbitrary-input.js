@@ -7,22 +7,35 @@ const modal = document.getElementById("arbitrary-modal");
 const touchscreenHelp = document.getElementById("touchscreen-help-text");
 const keyboardHelp = document.getElementById("keyboard-help-text");
 
-let lastX = null;
-let lastY = null;
+let startX = null;
+let startY = null;
+let lastMoveX = null;
+let lastMoveY = null;
+let lastSentX = null;
+let lastSentY = null;
+let touchStartTime = null;
 let lastSendTime = null;
 let moveTimeout = null;
 let moveStartTime = null;
-let touchCount = 0;
+let tapCount = 0;
 let moveCount = 0;
 let touchTimeout = null;
-let startDetectionTimeout = null;
+let startLongpressTimeout = null;
+var websocket;
 export let detectionActive = false;
-// Start arbitrary input mode on long press
+// Listeners that handle starting arbitrary input mode
 window.addEventListener(
   "touchstart",
-  () => {
-    if (!detectionActive) {
-      startDetectionTimeout = setTimeout(
+  (e) => {
+    if (detectionActive) {
+      return;
+    }
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    lastMoveX = startX;
+    lastMoveY = startY;
+    if (opts.start_on_longpress) {
+      startLongpressTimeout = setTimeout(
         startInputDetection,
         opts.start_press_duration,
       );
@@ -32,23 +45,62 @@ window.addEventListener(
 );
 window.addEventListener(
   "touchend",
-  () => {
-    if (startDetectionTimeout) {
-      clearTimeout(startDetectionTimeout);
+  async () => {
+    if (startLongpressTimeout) {
+      clearTimeout(startLongpressTimeout);
+    }
+    if (detectionActive) {
+      return;
+    }
+    if (opts.start_on_swipe) {
+      let min = opts.start_swipe_min_distance;
+      let diffX = startX - lastMoveX;
+      let diffY = startY - lastMoveY;
+      let swipeWasFarEnough =
+        diffX > min || diffX < -min || diffY > min || diffY < -min;
+      if (swipeWasFarEnough) {
+        startInputDetection();
+        while (true) {
+          await sleep(10);
+          if (!websocket) {
+            continue;
+          } else if (websocket.readyState === 1) {
+            await sendMoveRelative(diffX, diffY);
+            break;
+          }
+        }
+      }
+      resetTouch();
     }
   },
   false,
+);
+
+window.addEventListener(
+  "touchmove",
+  (e) => {
+    if (detectionActive) {
+      return;
+    }
+    if (opts.start_on_swipe && opts.swipe_prevent_default) {
+      e.preventDefault();
+    }
+    lastMoveX = e.touches[0].clientX;
+    lastMoveY = e.touches[0].clientY;
+  },
+  { passive: false, capture: false },
 );
 
 export async function stopInputDetection() {
   var modal = document.getElementById("arbitrary-modal");
   modal.style.display = "none";
   await websocket.close();
+  websocket = null;
   detectionActive = false;
 }
 
-var websocket;
 export async function startInputDetection(launchedWithKeyboard) {
+  console.log("Starting input detection");
   websocket = await new WebSocket(`ws://${location.host}:${wsPort}`);
   websocket.onmessage = handleSocketMessage;
   if (launchedWithKeyboard) {
@@ -105,19 +157,43 @@ async function touchStart(e) {
     clearTimeout(touchTimeout);
   }
   console.log(e);
-  lastX = e.touches[0].clientX;
-  lastY = e.touches[0].clientY;
+  startX = e.touches[0].clientX;
+  startY = e.touches[0].clientY;
+  lastMoveX = startX;
+  lastMoveY = startY;
+  lastSentX = startX;
+  lastSentY = startY;
+  touchStartTime = Date.now();
 }
 
 async function touchStop(e) {
   e.preventDefault();
-  touchCount += 1;
   console.log(e);
-  touchTimeout = setTimeout(detectTouchType, opts.touch_wait);
+  let touchDuration = Date.now() - touchStartTime;
+  let max = opts.tap_distance_cutoff;
+  let min = -max;
+  let diffX = lastMoveX - startX;
+  let diffY = lastMoveY - startY;
+  let touchWasTap =
+    touchDuration < 500 &&
+    diffX < max &&
+    diffX > min &&
+    diffY < max &&
+    diffY > min;
+  console.log("touchWasTap: " + touchWasTap);
+  if (touchWasTap) {
+    tapCount += 1;
+  } else {
+    resetTouch();
+  }
+  touchTimeout = setTimeout(handleTouchTap, opts.touch_wait_duration);
 }
 
 function resetTouch() {
-  touchCount = 0;
+  if (touchTimeout) {
+    clearTimeout(touchTimeout);
+  }
+  tapCount = 0;
   moveCount = 0;
   touchTimeout = null;
   moveTimeout = null;
@@ -125,18 +201,14 @@ function resetTouch() {
   moveStartTime = null;
 }
 
-function detectTouchType() {
-  console.log("Touch Count: " + touchCount);
+function handleTouchTap() {
+  console.log("Tap Count: " + tapCount);
   console.log("Move Count: " + moveCount);
-  if (moveCount > opts.move_event_cutoff) {
-    resetTouch();
-    return;
-  }
-  if (touchCount == 1) {
+  if (tapCount == 1) {
     shortPress();
-  } else if (touchCount == 2) {
+  } else if (tapCount == 2) {
     longPress();
-  } else if (touchCount == 3) {
+  } else if (tapCount == 3) {
     stopInputDetection();
   }
   resetTouch();
@@ -147,6 +219,8 @@ async function touchMove(e) {
   var x = e.touches[0].clientX;
   var y = e.touches[0].clientY;
   sendMoveIfDue(x, y);
+  lastMoveX = x;
+  lastMoveY = y;
 }
 
 let justUnpaused = false;
@@ -159,8 +233,8 @@ async function mouseMove(e) {
   var x = e.clientX;
   var y = e.clientY;
   if (justUnpaused) {
-    lastX = x;
-    lastY = y;
+    lastSentX = x;
+    lastSentY = y;
     justUnpaused = false;
   }
   sendMoveIfDue(x, y);
@@ -179,13 +253,13 @@ async function sendMoveIfDue(x, y) {
   var timeSinceStart = now - moveStartTime;
   var timeSinceSend = now - lastSendTime;
   if (timeSinceStart >= opts.move_send_wait && !lastSendTime) {
-    await moveRelative(x, y);
+    await sendMoveRelativeFromAbsolute(x, y);
   } else if (lastSendTime && timeSinceSend >= opts.move_send_wait) {
-    await moveRelative(x, y);
+    await sendMoveRelativeFromAbsolute(x, y);
   } else {
     // Make sure we always send the final mouse position
     moveTimeout = setTimeout(() => {
-      moveRelative(x, y);
+      sendMoveRelativeFromAbsolute(x, y);
     }, opts.final_move_send_delay);
   }
 }
@@ -200,17 +274,17 @@ async function mouseStop(e) {
   sendStop();
 }
 
-async function moveRelative(clientX, clientY) {
+async function sendMoveRelativeFromAbsolute(clientX, clientY) {
   var x = 0;
   var y = 0;
-  if (lastX != null) {
-    x = lastX - clientX;
-    y = lastY - clientY;
+  if (lastSentX != null) {
+    x = lastSentX - clientX;
+    y = lastSentY - clientY;
   }
   x *= opts.sensitivity;
   y *= opts.sensitivity;
-  lastX = clientX;
-  lastY = clientY;
+  lastSentX = clientX;
+  lastSentY = clientY;
   await sendMoveRelative(x, y);
 }
 

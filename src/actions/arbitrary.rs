@@ -68,18 +68,22 @@ impl Default for InputOptions {
 #[serde_with::serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ClientInputOptions {
+    pub start_on_longpress: bool,
     #[serde_as(as = "DurationMilliSeconds<i64>")]
     pub start_press_duration: Duration,
+    pub start_on_swipe: bool,
+    pub swipe_prevent_default: bool,
+    pub start_swipe_min_distance: u16,
     #[serde_as(as = "DurationMilliSeconds<i64>")]
     pub move_send_wait: Duration,
     #[serde_as(as = "DurationMilliSeconds<i64>")]
-    pub touch_wait: Duration,
+    pub touch_wait_duration: Duration,
     #[serde_as(as = "DurationMilliSeconds<i64>")]
     pub short_press_duration: Duration,
     #[serde_as(as = "DurationMilliSeconds<i64>")]
     pub long_press_duration: Duration,
     pub sensitivity: f32,
-    pub move_event_cutoff: u8,
+    pub tap_distance_cutoff: u8,
     pub arrow_move_distance: u8,
     pub control_move_multiplier: f32,
     pub shift_move_multiplier: f32,
@@ -90,13 +94,17 @@ pub struct ClientInputOptions {
 impl Default for ClientInputOptions {
     fn default() -> Self {
         Self {
+            start_on_longpress: true,
+            start_on_swipe: false,
+            start_swipe_min_distance: 200,
+            swipe_prevent_default: false,
             start_press_duration: Duration::milliseconds(1000),
             move_send_wait: Duration::milliseconds(500),
-            touch_wait: Duration::milliseconds(200),
+            touch_wait_duration: Duration::milliseconds(200),
             short_press_duration: Duration::milliseconds(1),
             long_press_duration: Duration::milliseconds(600),
             sensitivity: 2.0,
-            move_event_cutoff: 2,
+            tap_distance_cutoff: 5,
             arrow_move_distance: 20,
             control_move_multiplier: 3.0,
             shift_move_multiplier: 6.0,
