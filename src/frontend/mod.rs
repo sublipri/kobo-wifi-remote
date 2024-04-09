@@ -85,6 +85,7 @@ async fn remote_control(State(state): State<AppState>) -> Result<impl IntoRespon
         actions,
         shortcuts_json,
         enable_arbitrary: state.config.arbitrary_input.enabled,
+        prompt_fullscreen: state.config.prompt_fullscreen,
     })
 }
 
@@ -105,6 +106,7 @@ async fn page_turner(State(state): State<AppState>) -> Result<impl IntoResponse,
         next,
         prev,
         enable_arbitrary: state.config.arbitrary_input.enabled,
+        prompt_fullscreen: state.config.prompt_fullscreen,
     })
 }
 

@@ -80,7 +80,7 @@ SPDX-License-Identifier: GPL-3.0-only
       {% if enable_arbitrary -%}
         import { detectionActive } from "/js/arbitrary-input.js";
       {% endif -%}
-      import { playAction, closeMsg } from "/js/lib.js";
+      import { playAction, closeMsg, promptFullscreen } from "/js/lib.js";
       const next_btn = document.getElementById("next-page");
       const prev_btn = document.getElementById("prev-page");
       next_btn.onclick = async (event) => {
@@ -126,6 +126,9 @@ SPDX-License-Identifier: GPL-3.0-only
         },
         false,
       );
+      {% if prompt_fullscreen -%}
+        window.onload = promptFullscreen(2000);
+      {% endif -%}
     </script>
     <script src="/js/colored-buttons.js"></script>
   {% endif -%}

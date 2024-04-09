@@ -24,6 +24,7 @@ pub struct PageTurner {
     pub next: Option<ListActionResponse>,
     pub prev: Option<ListActionResponse>,
     pub enable_arbitrary: bool,
+    pub prompt_fullscreen: bool,
 }
 
 #[derive(Template)]
@@ -42,6 +43,7 @@ pub struct RemoteControl {
     pub actions: Vec<ListActionResponse>,
     pub shortcuts_json: String,
     pub enable_arbitrary: bool,
+    pub prompt_fullscreen: bool,
 }
 
 #[derive(Template)]

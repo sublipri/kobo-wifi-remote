@@ -17,6 +17,7 @@ pub struct Config {
     pub udev_dir: PathBuf,
     pub user_dir: PathBuf,
     pub port: u32,
+    pub prompt_fullscreen: bool,
     pub arbitrary_input: InputOptions,
     pub index: IndexOptions,
 }
@@ -28,6 +29,7 @@ impl Default for Config {
             udev_dir: "/etc/udev/rules.d".into(),
             user_dir: "/mnt/onboard/.adds/wifiremote".into(),
             port: 80,
+            prompt_fullscreen: false,
             arbitrary_input: Default::default(),
             index: Default::default(),
         }

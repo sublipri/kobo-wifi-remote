@@ -49,7 +49,7 @@ SPDX-License-Identifier: GPL-3.0-only
     {% if enable_arbitrary -%}
       import { detectionActive } from "/js/arbitrary-input.js";
     {% endif -%}
-    import { playAction } from "/js/lib.js";
+    import { playAction, promptFullscreen } from "/js/lib.js";
     const json = document.getElementById("shortcuts-json").textContent;
     const shortcuts = JSON.parse(json);
 
@@ -75,6 +75,9 @@ SPDX-License-Identifier: GPL-3.0-only
         }
       });
     }
+    {% if prompt_fullscreen -%}
+      window.onload = promptFullscreen(2000);
+    {% endif -%}
   </script>
   <script src="/js/colored-buttons.js"></script>
 </html>

@@ -109,3 +109,38 @@ export async function changeSetting(section, key, value) {
     displayMsg(await response.text());
   }
 }
+
+export function promptFullscreen(timeout) {
+  let modal = document.getElementById("fullscreen-modal");
+  if (!modal) {
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      `
+    <div id="fullscreen-modal" class="modal">
+      <div class="modal-content">
+        <p>Press here for fullscreen</p>
+      </div>
+    </div>
+`,
+    );
+    modal = document.getElementById("fullscreen-modal");
+  }
+  modal.addEventListener(
+    "touchend",
+    () => {
+      let body = document.querySelector("body");
+      body.requestFullscreen();
+      modal.style.display = "none";
+    },
+    false,
+  );
+  modal.onclick = function () {
+    let body = document.querySelector("body");
+    body.requestFullscreen();
+    modal.style.display = "none";
+  };
+  modal.style.display = "block";
+  setTimeout(function () {
+    modal.style.display = "none";
+  }, timeout);
+}
