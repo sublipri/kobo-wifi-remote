@@ -546,6 +546,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6e854126756c496b8c81dec88f9a706b15b875c5849d4097a3854476b9fdf94"
 
 [[package]]
+name = "diff"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56254986775e3233ffa9c4d7d3faaf6d36a2c09d30b20687e9f88bc8bafc16c8"
+
+[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1057,6 +1063,7 @@ dependencies = [
  "ini-roundtrip",
  "keyboard-types",
  "nix",
+ "pretty_assertions",
  "serde",
  "serde_json",
  "serde_with",
@@ -1328,7 +1335,7 @@ checksum = "4ccca0f6c17acc81df8e242ed473ec144cbf5c98037e69aa6d144780aad103c8"
 dependencies = [
  "inlinable_string",
  "pear_codegen",
- "yansi",
+ "yansi 1.0.0",
 ]
 
 [[package]]
@@ -1413,6 +1420,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 
 [[package]]
+name = "pretty_assertions"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af7cee1a6c8a5b9208b3cb1061f10c0cb689087b3d8ce85fb9d2dd7a29b6ba66"
+dependencies = [
+ "diff",
+ "yansi 0.5.1",
+]
+
+[[package]]
 name = "prettyplease"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1450,7 +1467,7 @@ dependencies = [
  "quote",
  "syn",
  "version_check",
- "yansi",
+ "yansi 1.0.0",
 ]
 
 [[package]]
@@ -2445,6 +2462,12 @@ checksum = "dffa400e67ed5a4dd237983829e66475f0a4a26938c4b04c21baede6262215b8"
 dependencies = [
  "memchr",
 ]
+
+[[package]]
+name = "yansi"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09041cd90cf85f7f8b2df60c646f853b7f535ce68f85244eb6731cf89fa498ec"
 
 [[package]]
 name = "yansi"

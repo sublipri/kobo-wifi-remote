@@ -6,10 +6,10 @@ use std::thread::{self, sleep};
 
 use anyhow::{anyhow, Context, Result};
 use chrono::{Duration, Utc};
-use evdev_rs::enums::EventCode::{EV_ABS, EV_KEY};
-use evdev_rs::enums::EV_ABS::*;
+use evdev_rs::enums::EventCode::{EV_ABS, EV_KEY, EV_SYN};
 use evdev_rs::enums::EV_KEY::BTN_TOUCH;
-use evdev_rs::{enums::EventType, Device, DeviceWrapper, InputEvent, ReadFlag, ReadStatus};
+use evdev_rs::enums::{EV_ABS::*, EV_SYN::*};
+use evdev_rs::{Device, DeviceWrapper, InputEvent, ReadFlag, ReadStatus};
 use nix::libc::suseconds_t;
 use tracing::{debug, warn};
 
@@ -178,7 +178,7 @@ pub fn optimize_events(events: &mut Vec<InputEvent>, syn_gap: Duration) -> bool 
     // batch will only signal the release of a touch, with end coordinates in the penultimate batch
     let idx = events
         .iter()
-        .position(|ev| ev.is_type(&EventType::EV_SYN))
+        .position(|ev| ev.is_code(&EV_SYN(SYN_REPORT)))
         .unwrap();
     let first: Vec<InputEvent> = events.drain(..idx + 1).collect();
     let mut last = drain_last_batch(events);
@@ -234,7 +234,7 @@ pub fn optimize_events(events: &mut Vec<InputEvent>, syn_gap: Duration) -> bool 
     let mut new_time = events.first().unwrap().time;
     for ev in events {
         ev.time = new_time;
-        if ev.is_type(&EventType::EV_SYN) {
+        if ev.is_code(&EV_SYN(SYN_REPORT)) {
             new_time.tv_usec += syn_gap.num_microseconds().unwrap() as suseconds_t;
         }
     }
@@ -244,7 +244,7 @@ pub fn optimize_events(events: &mut Vec<InputEvent>, syn_gap: Duration) -> bool 
 fn drain_last_batch(events: &mut Vec<InputEvent>) -> Vec<InputEvent> {
     if let Some(idx) = &events[..events.len() - 1]
         .iter()
-        .rposition(|ev| ev.is_type(&EventType::EV_SYN))
+        .rposition(|ev| ev.is_code(&EV_SYN(SYN_REPORT)))
     {
         events.drain(idx + 1..).collect()
     } else {
@@ -263,14 +263,15 @@ pub fn is_y_coord(ev: &InputEvent) -> bool {
 #[cfg(test)]
 mod tests {
     use chrono::Duration;
-    use evdev_rs::enums::EventCode::{EV_ABS, EV_KEY, EV_SYN};
+    use evdev_rs::enums::EventCode::{self, EV_ABS, EV_KEY, EV_SYN};
     use evdev_rs::enums::EV_ABS::*;
     use evdev_rs::enums::EV_KEY::BTN_TOUCH;
-    use evdev_rs::enums::EV_SYN::SYN_REPORT;
+    use evdev_rs::enums::EV_SYN::{SYN_MT_REPORT, SYN_REPORT};
     use evdev_rs::InputEvent;
     use evdev_rs::TimeVal;
 
     use super::optimize_events;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn optimize_events_second_x_missing() {
@@ -546,6 +547,85 @@ mod tests {
             },
         ];
 
+        let syn_gap = Duration::microseconds(1);
+        optimize_events(&mut events, syn_gap);
+        assert_eq!(expected, events);
+    }
+
+    // TODO: Migrate other tests to use this for better clarity/compactness
+    fn input_event(tv_sec: i64, tv_usec: i64, event_code: EventCode, value: i32) -> InputEvent {
+        let tv_sec = 1700000000 + tv_sec;
+        let time = TimeVal { tv_sec, tv_usec };
+        InputEvent {
+            time,
+            event_code,
+            value,
+        }
+    }
+
+    #[test]
+    // test that optimizing works when there are two types of SYN reports as on the Aura H20v1
+    fn optimize_events_multiple_syn_reports() {
+        let mut events = vec![
+            input_event(0, 1, EV_ABS(ABS_MT_TRACKING_ID), 1),
+            input_event(0, 731, EV_ABS(ABS_MT_TOUCH_MAJOR), 1),
+            input_event(0, 769, EV_ABS(ABS_MT_WIDTH_MAJOR), 1),
+            input_event(0, 788, EV_ABS(ABS_MT_POSITION_X), 790),
+            input_event(0, 800, EV_ABS(ABS_MT_POSITION_Y), 1012),
+            input_event(0, 814, EV_SYN(SYN_MT_REPORT), 0),
+            input_event(0, 824, EV_SYN(SYN_REPORT), 0),
+            input_event(0, 42261, EV_ABS(ABS_MT_TRACKING_ID), 1),
+            input_event(0, 43031, EV_ABS(ABS_MT_TOUCH_MAJOR), 1),
+            input_event(0, 43061, EV_ABS(ABS_MT_WIDTH_MAJOR), 1),
+            input_event(0, 43079, EV_ABS(ABS_MT_POSITION_X), 791),
+            input_event(0, 43091, EV_ABS(ABS_MT_POSITION_Y), 1012),
+            input_event(0, 43105, EV_SYN(SYN_MT_REPORT), 0),
+            input_event(0, 43117, EV_SYN(SYN_REPORT), 0),
+            input_event(0, 52835, EV_ABS(ABS_MT_TRACKING_ID), 1),
+            input_event(0, 52878, EV_ABS(ABS_MT_TOUCH_MAJOR), 1),
+            input_event(0, 52887, EV_ABS(ABS_MT_WIDTH_MAJOR), 1),
+            input_event(0, 52898, EV_ABS(ABS_MT_POSITION_X), 793),
+            input_event(0, 52910, EV_ABS(ABS_MT_POSITION_Y), 1011),
+            input_event(0, 52922, EV_SYN(SYN_MT_REPORT), 0),
+            input_event(0, 52932, EV_SYN(SYN_REPORT), 0),
+            input_event(0, 63256, EV_ABS(ABS_MT_TRACKING_ID), 1),
+            input_event(0, 63294, EV_ABS(ABS_MT_TOUCH_MAJOR), 1),
+            input_event(0, 63302, EV_ABS(ABS_MT_WIDTH_MAJOR), 1),
+            input_event(0, 63314, EV_ABS(ABS_MT_POSITION_X), 796),
+            input_event(0, 63325, EV_ABS(ABS_MT_POSITION_Y), 1009),
+            input_event(0, 63338, EV_SYN(SYN_MT_REPORT), 0),
+            input_event(0, 63347, EV_SYN(SYN_REPORT), 0),
+            input_event(0, 73467, EV_ABS(ABS_MT_TRACKING_ID), 1),
+            input_event(0, 73941, EV_ABS(ABS_MT_TOUCH_MAJOR), 0),
+            input_event(0, 74155, EV_ABS(ABS_MT_WIDTH_MAJOR), 0),
+            input_event(0, 74191, EV_ABS(ABS_MT_POSITION_X), 796),
+            input_event(0, 74205, EV_ABS(ABS_MT_POSITION_Y), 1009),
+            input_event(0, 74219, EV_SYN(SYN_MT_REPORT), 0),
+            input_event(0, 74231, EV_SYN(SYN_REPORT), 0),
+        ];
+        let expected = vec![
+            input_event(0, 1, EV_ABS(ABS_MT_TRACKING_ID), 1),
+            input_event(0, 1, EV_ABS(ABS_MT_TOUCH_MAJOR), 1),
+            input_event(0, 1, EV_ABS(ABS_MT_WIDTH_MAJOR), 1),
+            input_event(0, 1, EV_ABS(ABS_MT_POSITION_X), 790),
+            input_event(0, 1, EV_ABS(ABS_MT_POSITION_Y), 1012),
+            input_event(0, 1, EV_SYN(SYN_MT_REPORT), 0),
+            input_event(0, 1, EV_SYN(SYN_REPORT), 0),
+            input_event(0, 2, EV_ABS(ABS_MT_TRACKING_ID), 1),
+            input_event(0, 2, EV_ABS(ABS_MT_TOUCH_MAJOR), 1),
+            input_event(0, 2, EV_ABS(ABS_MT_WIDTH_MAJOR), 1),
+            input_event(0, 2, EV_ABS(ABS_MT_POSITION_X), 796),
+            input_event(0, 2, EV_ABS(ABS_MT_POSITION_Y), 1009),
+            input_event(0, 2, EV_SYN(SYN_MT_REPORT), 0),
+            input_event(0, 2, EV_SYN(SYN_REPORT), 0),
+            input_event(0, 3, EV_ABS(ABS_MT_TRACKING_ID), 1),
+            input_event(0, 3, EV_ABS(ABS_MT_TOUCH_MAJOR), 0),
+            input_event(0, 3, EV_ABS(ABS_MT_WIDTH_MAJOR), 0),
+            input_event(0, 3, EV_ABS(ABS_MT_POSITION_X), 796),
+            input_event(0, 3, EV_ABS(ABS_MT_POSITION_Y), 1009),
+            input_event(0, 3, EV_SYN(SYN_MT_REPORT), 0),
+            input_event(0, 3, EV_SYN(SYN_REPORT), 0),
+        ];
         let syn_gap = Duration::microseconds(1);
         optimize_events(&mut events, syn_gap);
         assert_eq!(expected, events);
