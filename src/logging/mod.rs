@@ -1,4 +1,5 @@
 use crate::{errors::AppError, server::AppState};
+use anyhow::Context;
 pub use syslog::setup_syslog;
 use tracing::debug;
 
@@ -25,7 +26,10 @@ pub fn routes() -> Router<AppState> {
 
 async fn get_log() -> Result<impl IntoResponse, AppError> {
     debug!("Preparing log file for download");
-    let stdout = Command::new("logread").output()?.stdout;
+    let stdout = Command::new("/sbin/logread")
+        .output()
+        .context("Failed to collect output of /sbin/logread")?
+        .stdout;
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
     let to_write = stdout
         .lines()
