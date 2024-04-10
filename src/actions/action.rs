@@ -55,6 +55,7 @@ impl ActionManager {
                     sort_value: opts.sort_value.clone().unwrap_or(opts.name.clone()),
                     name: opts.name.clone(),
                     keyboard_shortcut: opts.keyboard_shortcut,
+                    voice_trigger: opts.voice_trigger.clone(),
                     post_playback_delay: opts.post_playback_delay,
                 },
             );
@@ -140,6 +141,7 @@ impl ActionManager {
                             sort_value: opts.sort_value.clone(),
                             keyboard_shortcut: opts.keyboard_shortcut,
                             post_playback_delay: opts.post_playback_delay,
+                            voice_trigger: opts.voice_trigger.clone(),
                         })
                     }
                     actions.sort_by(|a, b| a.sort_value.partial_cmp(&b.sort_value).unwrap());
@@ -211,6 +213,7 @@ pub struct ActionOptions {
     pub keyboard_shortcut: Option<keyboard_types::Code>,
     #[serde_as(as = "DurationMilliSeconds<i64>")]
     pub post_playback_delay: Duration,
+    pub voice_trigger: Option<String>,
 }
 
 #[serde_with::serde_as]
@@ -222,6 +225,7 @@ pub struct ListActionResponse {
     pub keyboard_shortcut: Option<keyboard_types::Code>,
     #[serde_as(as = "DurationMilliSeconds<i64>")]
     pub post_playback_delay: Duration,
+    pub voice_trigger: Option<String>,
 }
 
 impl ListActionResponse {
@@ -336,6 +340,7 @@ pub struct RecordActionOptions {
     pub sort_value: Option<String>,
     pub path_segment: Option<String>,
     pub keyboard_shortcut: Option<keyboard_types::Code>,
+    pub voice_trigger: Option<String>,
     pub only_check_touch: bool,
     pub optimize: bool,
     #[serde_as(as = "DurationMilliSeconds<i64>")]
@@ -357,6 +362,7 @@ impl Default for RecordActionOptions {
             sort_value: None,
             path_segment: None,
             keyboard_shortcut: None,
+            voice_trigger: None,
             only_check_touch: true,
             optimize: true,
             post_playback_delay: Duration::milliseconds(300),
@@ -491,9 +497,23 @@ impl ActionsFile {
             debug!("Loading actions from {}", path.display());
             let file = fs::read_to_string(&path)
                 .with_context(|| format!("Failed to read actions from {}", &path.display()))?;
-            toml::from_str(&file).with_context(|| {
-                format!("Failed to deserialize actions from {}", &path.display())
-            })?
+            let mut data: BTreeMap<String, ActionOptions> =
+                toml::from_str(&file).with_context(|| {
+                    format!("Failed to deserialize actions from {}", &path.display())
+                })?;
+            // voice_trigger was introduced in 0.3.0, so set it for page turns recorded with older
+            // versions.
+            data.entry("next-page".to_string()).and_modify(|a| {
+                if a.voice_trigger.is_none() {
+                    a.voice_trigger = Some("Forward".to_string());
+                }
+            });
+            data.entry("prev-page".to_string()).and_modify(|a| {
+                if a.voice_trigger.is_none() {
+                    a.voice_trigger = Some("Backward".to_string());
+                }
+            });
+            data
         } else {
             debug!("No action file at {}", path.display());
             BTreeMap::new()

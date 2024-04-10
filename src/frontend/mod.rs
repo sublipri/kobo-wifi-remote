@@ -12,8 +12,8 @@ use axum::{
 };
 use tokio::sync::oneshot;
 
-mod templates;
 pub mod index;
+mod templates;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -32,6 +32,7 @@ pub fn routes() -> Router<AppState> {
         .route("/remote-control", get(remote_control))
         .route("/auto-turner", get(auto_turner))
         .route("/developer-settings", get(developer_settings))
+        .route("/voice-activation", get(voice_activation))
         .route("/styles/main.css", get(main_css))
         .route("/styles/remote.css", get(remote_css))
         .route("/js/record-action.js", get(record_action_js))
@@ -125,7 +126,11 @@ async fn auto_turner(State(state): State<AppState>) -> Result<impl IntoResponse,
             _ => continue,
         }
     }
-    Ok(templates::AutoTurner { next, prev, delay: state.config.auto_turner_delay })
+    Ok(templates::AutoTurner {
+        next,
+        prev,
+        delay: state.config.auto_turner_delay,
+    })
 }
 
 async fn auto_turner_js() -> impl IntoResponse {
@@ -136,6 +141,12 @@ async fn developer_settings() -> Result<impl IntoResponse, AppError> {
     let config = KoboConfigFile::open(Default::default())?;
     let settings = config.get_values();
     Ok(templates::DeveloperSettings { settings })
+}
+
+async fn voice_activation(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    Ok(templates::VoiceActivation {
+        language_code: state.config.voice_language_code,
+    })
 }
 
 async fn manage_actions(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {

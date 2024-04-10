@@ -56,6 +56,13 @@ SPDX-License-Identifier: GPL-3.0-only
         title="How long in milliseconds to wait after replaying the input before playing another action"
         step="50"
       /><br />
+      <label for="voice-trigger">Voice Trigger Word:</label><br />
+      <input
+        type="text"
+        id="voice-trigger"
+        name="voice_trigger"
+        title="A single word to be used with the experimental voice activation feature"
+      /><br />
       <p>
         <button type="button" id="update-action-btn">Update Action</button>
       </p>
@@ -101,6 +108,8 @@ SPDX-License-Identifier: GPL-3.0-only
         action.keyboard_shortcut;
       document.getElementById("post-playback-delay").value =
         action.post_playback_delay;
+      document.getElementById("voice-trigger").value =
+        action.voice_trigger;
 
       document.getElementById("update-action-btn").onclick = async () => {
         let form = document.getElementById("manage-actions-form");
@@ -155,6 +164,7 @@ SPDX-License-Identifier: GPL-3.0-only
       document.getElementById("sort-value").value = "";
       document.getElementById("keyboard-shortcut").value = "";
       document.getElementById("post-playback-delay").value = "";
+      document.getElementById("voice-trigger").value = "";
       resetUpdateBtn();
     }
     function resetUpdateBtn() {

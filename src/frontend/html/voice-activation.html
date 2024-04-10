@@ -1,0 +1,140 @@
+<!--
+SPDX-FileCopyrightText: 2023 sublipri <sublipri@proton.me>
+SPDX-License-Identifier: GPL-3.0-only
+-->
+<!doctype html>
+<html>
+  <head>
+    <title>Kobo Wi-Fi Remote</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+      charset="UTF-8"
+    />
+    <link href="/styles/main.css" rel="stylesheet" />
+  </head>
+  <p>
+    This is an experimental feature that will only work on Chromium-based
+    browsers on desktop, and possibly on rooted Android and ChromeOS devices
+    (untested). It requires an experimental feature flag to be enabled. You must
+    enter
+    <code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code> into
+    the address bar and add the e-reader's address to the list e.g
+    http://192.168.10.1. It has only been confirmed to work on Chromium on
+    Linux. Note that it will send the audio to Google's servers for speech
+    recognition.
+  </p>
+  <p>
+    Speak a single word to trigger an action. "Forward" and "Backward" are the
+    defaults for page turns since shorter words seemed less reliable in testing.
+    This can be changed on the manage actions page. For languages other than
+    American English, you must update your config file with the appropriate
+    <a href="https://www.techonthenet.com/js/language_tags.php">
+      language tag</a
+    >
+  </p>
+  <p>
+    <button type="button" id="toggle-voice-btn">Start Listening</button>
+  </p>
+  <p>
+    <a href="/manage-actions"
+      ><button type="button" id="manage-actions">Manage Actions</button></a
+    >
+  </p>
+  <p>
+    <a href="javascript:history.back()"
+      ><button type="button" id="go-back">Go Back</button></a
+    >
+  </p>
+  <body style="margin: 0; padding: 0"></body>
+  <script type="module">
+    import { displayMsg, playAction, sleep } from "/js/lib.js";
+
+    var SpeechRecognition =
+      window.SpeechRecognition ||
+      window.webkitSpeechRecognition ||
+      window.mozSpeechRecognition ||
+      window.msSpeechRecognition ||
+      window.oSpeechRecognition;
+
+    var recognition = new SpeechRecognition();
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 5;
+    recognition.lang = "{{ language_code }}";
+
+    const response = await fetch("/actions");
+    const actions = await response.json();
+
+    recognition.onresult = async function (event) {
+      for (const result of event.results[0]) {
+        console.log("Transcript: " + result.transcript);
+        console.log("Confidence: " + result.confidence);
+        const action = actions.find(
+          (a) => a.voice_trigger.toLowerCase() === result.transcript,
+        );
+        if (action) {
+          await playAction(action.path_segment);
+          break;
+        }
+      }
+    };
+
+    recognition.onspeechend = async function () {
+      console.log("Speech recognition ended. Restarting");
+      restart();
+    };
+
+    recognition.onnomatch = function (event) {
+      console.log("No match for event");
+      console.log(event);
+    };
+
+    recognition.onerror = async function (event) {
+      switch (event.error) {
+        case "network":
+          break;
+        case "no-speech":
+          console.log("No speech detected. Restarting");
+          await restart();
+          break;
+        default:
+          displayMsg(`Error: ${event.error} ${event.message}`);
+          break;
+      }
+    };
+
+    let btn = document.getElementById("toggle-voice-btn");
+    btn.onclick = startListening;
+
+    function startListening() {
+      recognition.start();
+      btn.onclick = stopListening;
+      btn.innerHTML = "Stop Listening";
+    }
+
+    function stopListening() {
+      recognition.stop();
+      btn.innerHTML = "Start Listening";
+      btn.onclick = startListening;
+    }
+
+    async function restart() {
+      let restarted = false;
+      let attempts = 0;
+      const max_attempts = 100;
+      while (!restarted) {
+        await sleep(50);
+        try {
+          recognition.start();
+          restarted = true;
+        } catch (e) {
+          attempts += 1;
+          if (attempts > max_attempts) {
+            console.log(e);
+            displayMsg("Failed to restart speech recognition. " + e);
+          }
+        }
+      }
+    }
+  </script>
+</html>

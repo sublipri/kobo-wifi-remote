@@ -60,3 +60,9 @@ pub struct AutoTurner {
     pub prev: Option<ListActionResponse>,
     pub delay: Duration,
 }
+
+#[derive(Template)]
+#[template(path = "voice-activation.html")]
+pub struct VoiceActivation {
+    pub language_code: String,
+}

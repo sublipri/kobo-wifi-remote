@@ -24,6 +24,7 @@ impl Default for IndexOptions {
                 IndexItem::new("remote-control", "Remote Control", true),
                 IndexItem::new("screenshot", "Screenshot", true),
                 IndexItem::new("auto-turner", "Auto Turner", true),
+                IndexItem::new("voice-activation", "Voice Activation", true),
                 IndexItem::new("developer-settings", "Developer Settings", true),
                 IndexItem::new("troubleshooting", "Troubleshooting", true),
             ],

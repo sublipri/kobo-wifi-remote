@@ -23,6 +23,7 @@ pub struct Config {
     pub prompt_fullscreen: bool,
     #[serde_as(as = "DurationSeconds<i64>")]
     pub auto_turner_delay: Duration,
+    pub voice_language_code: String,
     pub arbitrary_input: InputOptions,
     pub index: IndexOptions,
 }
@@ -35,6 +36,7 @@ impl Default for Config {
             user_dir: "/mnt/onboard/.adds/wifiremote".into(),
             port: 80,
             prompt_fullscreen: false,
+            voice_language_code: "en-US".into(),
             arbitrary_input: Default::default(),
             index: Default::default(),
             auto_turner_delay: Duration::seconds(120),
