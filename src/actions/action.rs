@@ -1,4 +1,4 @@
-use super::input::{get_input_devices, optimize_events, read_input};
+use super::input::{get_input_devices, is_touch_device, optimize_events, read_input};
 use crate::util::sleep;
 
 use std::collections::BTreeMap;
@@ -9,10 +9,8 @@ use std::sync::Arc;
 
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Duration, Utc};
-use evdev_rs::enums::EventCode::EV_KEY;
-use evdev_rs::enums::EV_KEY::BTN_TOUCH;
 use evdev_rs::util::event_code_to_int;
-use evdev_rs::{DeviceWrapper, InputEvent, TimeVal};
+use evdev_rs::{InputEvent, TimeVal};
 use fbink_rs::{CanonicalRotation, FbInk};
 use nix::libc;
 use serde::{Deserialize, Serialize};
@@ -253,9 +251,7 @@ impl ActionRecording {
 
         let devices_with_events = if opts.only_check_touch {
             read_input(
-                devices
-                    .into_iter()
-                    .filter(|d| d.evdev.has(EV_KEY(BTN_TOUCH))),
+                devices.into_iter().filter(is_touch_device),
                 opts.poll_wait,
                 opts.no_input_timeout,
                 opts.new_event_timeout,

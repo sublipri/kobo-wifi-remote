@@ -163,6 +163,15 @@ impl Display for InputDevice {
     }
 }
 
+pub fn is_touch_device(d: &InputDevice) -> bool {
+    debug!("Checking if {d} is a touch device");
+    let has_btn_touch = d.evdev.has(EV_KEY(BTN_TOUCH));
+    debug!("has_btn_touch: {has_btn_touch}");
+    let has_mt_pos_x = d.evdev.has(EV_ABS(ABS_MT_POSITION_X));
+    debug!("has_mt_pos_x: {has_mt_pos_x}");
+    has_btn_touch || has_mt_pos_x
+}
+
 pub fn optimize_events(events: &mut Vec<InputEvent>, syn_gap: Duration) -> bool {
     if events.is_empty()
         // Skip actions more complex than a single tap or swipe
