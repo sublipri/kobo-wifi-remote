@@ -287,275 +287,31 @@ mod tests {
     #[test]
     fn optimize_events_second_x_missing() {
         let mut events = vec![
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769621,
-                },
-                event_code: EV_ABS(ABS_Y),
-                value: 51,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769664,
-                },
-                event_code: EV_ABS(ABS_X),
-                value: 522,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769678,
-                },
-                event_code: EV_ABS(ABS_PRESSURE),
-                value: 100,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769693,
-                },
-                event_code: EV_KEY(BTN_TOUCH),
-                value: 1,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769705,
-                },
-                event_code: EV_SYN(SYN_REPORT),
-                value: 0,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 798527,
-                },
-                event_code: EV_ABS(ABS_Y),
-                value: 51,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 798576,
-                },
-                event_code: EV_ABS(ABS_PRESSURE),
-                value: 100,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 798598,
-                },
-                event_code: EV_SYN(SYN_REPORT),
-                value: 0,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 807840,
-                },
-                event_code: EV_ABS(ABS_PRESSURE),
-                value: 0,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 807881,
-                },
-                event_code: EV_KEY(BTN_TOUCH),
-                value: 0,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 807892,
-                },
-                event_code: EV_SYN(SYN_REPORT),
-                value: 0,
-            },
+            input_event(1705963814, 769621, EV_ABS(ABS_Y), 51),
+            input_event(1705963814, 769664, EV_ABS(ABS_X), 522),
+            input_event(1705963814, 769678, EV_ABS(ABS_PRESSURE), 100),
+            input_event(1705963814, 769693, EV_KEY(BTN_TOUCH), 1),
+            input_event(1705963814, 769705, EV_SYN(SYN_REPORT), 0),
+            input_event(1705963814, 798527, EV_ABS(ABS_Y), 51),
+            input_event(1705963814, 798576, EV_ABS(ABS_PRESSURE), 100),
+            input_event(1705963814, 798598, EV_SYN(SYN_REPORT), 0),
+            input_event(1705963814, 807840, EV_ABS(ABS_PRESSURE), 0),
+            input_event(1705963814, 807881, EV_KEY(BTN_TOUCH), 0),
+            input_event(1705963814, 807892, EV_SYN(SYN_REPORT), 0),
         ];
-
-        let expected = InputEvent {
-            time: TimeVal {
-                tv_sec: 1705963814,
-                tv_usec: 769622,
-            },
-            event_code: EV_ABS(ABS_X),
-            value: 523,
-        };
-        let syn_gap = Duration::microseconds(1);
-        optimize_events(&mut events, syn_gap);
-        assert_eq!(expected, events[5]);
-    }
-
-    #[test]
-    fn optimize_events_second_batch_missing() {
-        let mut events = vec![
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769621,
-                },
-                event_code: EV_ABS(ABS_Y),
-                value: 51,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769664,
-                },
-                event_code: EV_ABS(ABS_X),
-                value: 522,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769678,
-                },
-                event_code: EV_ABS(ABS_PRESSURE),
-                value: 100,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769693,
-                },
-                event_code: EV_KEY(BTN_TOUCH),
-                value: 1,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769705,
-                },
-                event_code: EV_SYN(SYN_REPORT),
-                value: 0,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 807840,
-                },
-                event_code: EV_ABS(ABS_PRESSURE),
-                value: 0,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 807881,
-                },
-                event_code: EV_KEY(BTN_TOUCH),
-                value: 0,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 807892,
-                },
-                event_code: EV_SYN(SYN_REPORT),
-                value: 0,
-            },
-        ];
-
         let expected = vec![
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769621,
-                },
-                event_code: EV_ABS(ABS_Y),
-                value: 51,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769621,
-                },
-                event_code: EV_ABS(ABS_X),
-                value: 522,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769621,
-                },
-                event_code: EV_ABS(ABS_PRESSURE),
-                value: 100,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769621,
-                },
-                event_code: EV_KEY(BTN_TOUCH),
-                value: 1,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769621,
-                },
-                event_code: EV_SYN(SYN_REPORT),
-                value: 0,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769622,
-                },
-                event_code: EV_ABS(ABS_Y),
-                value: 52,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769622,
-                },
-                event_code: EV_ABS(ABS_X),
-                value: 523,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769622,
-                },
-                event_code: EV_ABS(ABS_PRESSURE),
-                value: 100,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769622,
-                },
-                event_code: EV_SYN(SYN_REPORT),
-                value: 0,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769623,
-                },
-                event_code: EV_ABS(ABS_PRESSURE),
-                value: 0,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769623,
-                },
-                event_code: EV_KEY(BTN_TOUCH),
-                value: 0,
-            },
-            InputEvent {
-                time: TimeVal {
-                    tv_sec: 1705963814,
-                    tv_usec: 769623,
-                },
-                event_code: EV_SYN(SYN_REPORT),
-                value: 0,
-            },
+            input_event(1705963814, 769621, EV_ABS(ABS_Y), 51),
+            input_event(1705963814, 769621, EV_ABS(ABS_X), 522),
+            input_event(1705963814, 769621, EV_ABS(ABS_PRESSURE), 100),
+            input_event(1705963814, 769621, EV_KEY(BTN_TOUCH), 1),
+            input_event(1705963814, 769621, EV_SYN(SYN_REPORT), 0),
+            input_event(1705963814, 769622, EV_ABS(ABS_X), 523),
+            input_event(1705963814, 769622, EV_ABS(ABS_Y), 52),
+            input_event(1705963814, 769622, EV_ABS(ABS_PRESSURE), 100),
+            input_event(1705963814, 769622, EV_SYN(SYN_REPORT), 0),
+            input_event(1705963814, 769623, EV_ABS(ABS_PRESSURE), 0),
+            input_event(1705963814, 769623, EV_KEY(BTN_TOUCH), 0),
+            input_event(1705963814, 769623, EV_SYN(SYN_REPORT), 0),
         ];
 
         let syn_gap = Duration::microseconds(1);
@@ -563,9 +319,40 @@ mod tests {
         assert_eq!(expected, events);
     }
 
-    // TODO: Migrate other tests to use this for better clarity/compactness
+    #[test]
+    fn optimize_events_second_batch_missing() {
+        let mut events = vec![
+            input_event(1705963814, 769621, EV_ABS(ABS_Y), 51),
+            input_event(1705963814, 769664, EV_ABS(ABS_X), 522),
+            input_event(1705963814, 769678, EV_ABS(ABS_PRESSURE), 100),
+            input_event(1705963814, 769693, EV_KEY(BTN_TOUCH), 1),
+            input_event(1705963814, 769705, EV_SYN(SYN_REPORT), 0),
+            input_event(1705963814, 807840, EV_ABS(ABS_PRESSURE), 0),
+            input_event(1705963814, 807881, EV_KEY(BTN_TOUCH), 0),
+            input_event(1705963814, 807892, EV_SYN(SYN_REPORT), 0),
+        ];
+
+        let expected = vec![
+            input_event(1705963814, 769621, EV_ABS(ABS_Y), 51),
+            input_event(1705963814, 769621, EV_ABS(ABS_X), 522),
+            input_event(1705963814, 769621, EV_ABS(ABS_PRESSURE), 100),
+            input_event(1705963814, 769621, EV_KEY(BTN_TOUCH), 1),
+            input_event(1705963814, 769621, EV_SYN(SYN_REPORT), 0),
+            input_event(1705963814, 769622, EV_ABS(ABS_Y), 52),
+            input_event(1705963814, 769622, EV_ABS(ABS_X), 523),
+            input_event(1705963814, 769622, EV_ABS(ABS_PRESSURE), 100),
+            input_event(1705963814, 769622, EV_SYN(SYN_REPORT), 0),
+            input_event(1705963814, 769623, EV_ABS(ABS_PRESSURE), 0),
+            input_event(1705963814, 769623, EV_KEY(BTN_TOUCH), 0),
+            input_event(1705963814, 769623, EV_SYN(SYN_REPORT), 0),
+        ];
+
+        let syn_gap = Duration::microseconds(1);
+        optimize_events(&mut events, syn_gap);
+        assert_eq!(expected, events);
+    }
+
     fn input_event(tv_sec: i64, tv_usec: i64, event_code: EventCode, value: i32) -> InputEvent {
-        let tv_sec = 1700000000 + tv_sec;
         let time = TimeVal { tv_sec, tv_usec };
         InputEvent {
             time,
