@@ -284,11 +284,15 @@ impl ActionRecording {
             devices_with_events.into_iter().next().unwrap()
         };
 
+        log_events(&events);
         let is_optimized = if opts.optimize {
             optimize_events(&mut events, opts.syn_gap)
         } else {
             false
         };
+        if is_optimized {
+            log_events(&events);
+        }
 
         let dev_name = device.to_string();
         Ok(ActionRecording {
@@ -325,6 +329,15 @@ impl ActionRecording {
         debug!("Finished writing events for {}", path_segment);
 
         Ok(())
+    }
+}
+
+fn log_events(events: &[InputEvent]) {
+    for e in events {
+        debug!(
+            "{}.{} {} {}",
+            e.time.tv_sec, e.time.tv_usec, e.event_code, e.value
+        );
     }
 }
 
