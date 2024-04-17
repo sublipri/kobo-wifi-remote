@@ -249,7 +249,7 @@ impl ActionRecording {
         opts: &RecordActionOptions,
         rotation: CanonicalRotation,
     ) -> Result<ActionRecording> {
-        let devices = get_input_devices()?;
+        let devices = get_input_devices(opts.use_by_path)?;
 
         let devices_with_events = if opts.only_check_touch {
             read_input(
@@ -343,6 +343,7 @@ pub struct RecordActionOptions {
     pub voice_trigger: Option<String>,
     pub only_check_touch: bool,
     pub optimize: bool,
+    pub use_by_path: bool,
     #[serde_as(as = "DurationMilliSeconds<i64>")]
     pub post_playback_delay: Duration,
     #[serde_as(as = "DurationMicroSeconds<i64>")]
@@ -365,6 +366,7 @@ impl Default for RecordActionOptions {
             voice_trigger: None,
             only_check_touch: true,
             optimize: true,
+            use_by_path: false,
             post_playback_delay: Duration::milliseconds(300),
             syn_gap: Duration::microseconds(1),
             no_input_timeout: Duration::milliseconds(5000),

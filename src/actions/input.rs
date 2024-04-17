@@ -13,13 +13,15 @@ use evdev_rs::{Device, DeviceWrapper, InputEvent, ReadFlag, ReadStatus};
 use nix::libc::suseconds_t;
 use tracing::{debug, warn};
 
-pub fn get_input_devices() -> Result<Vec<InputDevice>> {
-    // /dev/input/eventX paths aren't guaranteed to be stable, so use by-path if possible.
-    // It doesn't exist on old kernels but the device paths don't seem to change in practise
+pub fn get_input_devices(use_by_path: bool) -> Result<Vec<InputDevice>> {
+    // /dev/input/eventX paths aren't guaranteed to be stable, but they don't seem to change in
+    // practise. /dev/input/by-path doesn't exist on old kernels, and on at least the Aura H20
+    // it exists but it doesn't contain the touchscreen. So we'll always use /dev/input/eventX
+    // by default, but provide an option to use by-path in case there are ever situations where
+    // it works better.
     let by_path = PathBuf::from("/dev/input/by-path");
-    let mut use_by_path = false;
-    let device_dir = if by_path.exists() {
-        use_by_path = true;
+    let use_by_path = use_by_path && by_path.exists();
+    let device_dir = if use_by_path {
         by_path
     } else {
         "/dev/input".into()
