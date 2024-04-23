@@ -519,12 +519,12 @@ impl ActionsFile {
             // versions.
             data.entry("next-page".to_string()).and_modify(|a| {
                 if a.voice_trigger.is_none() {
-                    a.voice_trigger = Some("Forward".to_string());
+                    a.voice_trigger = Some("Next".to_string());
                 }
             });
             data.entry("prev-page".to_string()).and_modify(|a| {
                 if a.voice_trigger.is_none() {
-                    a.voice_trigger = Some("Backward".to_string());
+                    a.voice_trigger = Some("Previous".to_string());
                 }
             });
             data
