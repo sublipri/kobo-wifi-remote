@@ -18,7 +18,7 @@ use tower::Layer;
 use tower_http::{
     normalize_path::NormalizePathLayer, set_header::response::SetResponseHeaderLayer,
 };
-use tracing::info;
+use tracing::{error, info};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -48,9 +48,12 @@ pub async fn serve(config: &Config) -> Result<()> {
         ActionManager::from_path(config.action_file(), config.recordings_file(), fbink, rx)?;
     if config.arbitrary_input.enabled {
         if let Ok(template) = manager.recordings.get_any("next-page") {
-            let mut input_manager =
-                InputManager::new(template.clone(), state.fbink.clone(), config)?;
-            thread::spawn(move || input_manager.manage());
+            match InputManager::new(template.clone(), state.fbink.clone(), config) {
+                Ok(mut input_manager) => {
+                    thread::spawn(move || input_manager.manage());
+                }
+                Err(e) => error!("Failed to start arbitrary input manager. {e}"),
+            };
         } else {
             info!("No recording to use as template. Not running arbitrary input manager.");
         }
