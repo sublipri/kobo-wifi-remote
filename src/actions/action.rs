@@ -286,7 +286,7 @@ impl ActionRecording {
 
         log_events(&events);
         let is_optimized = if opts.optimize {
-            optimize_events(&mut events, opts.syn_gap)
+            optimize_events(&mut events, opts.syn_gap, opts.optimize_max_duration)
         } else {
             false
         };
@@ -354,6 +354,8 @@ pub struct RecordActionOptions {
     pub optimize: bool,
     pub use_by_path: bool,
     #[serde_as(as = "DurationMilliSeconds<i64>")]
+    pub optimize_max_duration: Duration,
+    #[serde_as(as = "DurationMilliSeconds<i64>")]
     pub post_playback_delay: Duration,
     #[serde_as(as = "DurationMicroSeconds<i64>")]
     pub syn_gap: Duration,
@@ -374,8 +376,9 @@ impl Default for RecordActionOptions {
             keyboard_shortcut: None,
             voice_trigger: None,
             only_check_touch: true,
-            optimize: true,
+            optimize: false,
             use_by_path: false,
+            optimize_max_duration: Duration::milliseconds(1000),
             post_playback_delay: Duration::milliseconds(300),
             syn_gap: Duration::microseconds(1),
             no_input_timeout: Duration::milliseconds(5000),
@@ -491,7 +494,7 @@ fn create_action_events(events: &[InputEvent]) -> Vec<ActionEvent> {
 }
 
 #[allow(clippy::useless_conversion)]
-fn parse_timeval(tv: TimeVal) -> DateTime<Utc> {
+pub fn parse_timeval(tv: TimeVal) -> DateTime<Utc> {
     let nsec = tv.tv_usec as u32 * 1000;
     // tv_sec will be i32 on 32bit platforms
     DateTime::from_timestamp(tv.tv_sec.into(), nsec).unwrap()

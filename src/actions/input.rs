@@ -1,3 +1,5 @@
+use super::parse_timeval;
+
 use std::fmt::Display;
 use std::fs::{self, File};
 use std::path::PathBuf;
@@ -172,12 +174,28 @@ pub fn is_touch_device(d: &InputDevice) -> bool {
     has_btn_touch || has_mt_pos_x
 }
 
-pub fn optimize_events(events: &mut Vec<InputEvent>, syn_gap: Duration) -> bool {
+fn events_duration(events: &[InputEvent]) -> Duration {
+    let Some(first) = events.first() else {
+        return Duration::zero();
+    };
+    let Some(last) = events.last() else {
+        return Duration::zero();
+    };
+    parse_timeval(last.time) - parse_timeval(first.time)
+}
+
+pub fn optimize_events(
+    events: &mut Vec<InputEvent>,
+    syn_gap: Duration,
+    max_duration: Duration,
+) -> bool {
     if events.is_empty()
         // Skip actions more complex than a single tap or swipe
         || events.iter().filter(|ev| ev.is_code(&EV_KEY(BTN_TOUCH))).count() > 2
         // Skip multi-touch gestures
         || events.iter().filter(|ev| ev.is_code(&EV_ABS(ABS_MT_SLOT))).count() > 1
+        // The Aura H20 doesn't produce BTN_TOUCH events, so as a fallback skip long sequences
+        || events_duration(events) > max_duration
     {
         debug!("Skipped optimizing events");
         return false;
@@ -315,7 +333,8 @@ mod tests {
         ];
 
         let syn_gap = Duration::microseconds(1);
-        optimize_events(&mut events, syn_gap);
+        let max_duration = Duration::milliseconds(500);
+        optimize_events(&mut events, syn_gap, max_duration);
         assert_eq!(expected, events);
     }
 
@@ -348,7 +367,8 @@ mod tests {
         ];
 
         let syn_gap = Duration::microseconds(1);
-        optimize_events(&mut events, syn_gap);
+        let max_duration = Duration::milliseconds(500);
+        optimize_events(&mut events, syn_gap, max_duration);
         assert_eq!(expected, events);
     }
 
@@ -425,7 +445,8 @@ mod tests {
             input_event(0, 3, EV_SYN(SYN_REPORT), 0),
         ];
         let syn_gap = Duration::microseconds(1);
-        optimize_events(&mut events, syn_gap);
+        let max_duration = Duration::milliseconds(500);
+        optimize_events(&mut events, syn_gap, max_duration);
         assert_eq!(expected, events);
     }
 }
