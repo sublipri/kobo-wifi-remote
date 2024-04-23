@@ -15,7 +15,7 @@ use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
 use serde::{Deserialize, Serialize};
 use slug::slugify;
-use tracing::{info, warn};
+use tracing::{error, info, warn};
 
 #[derive(Parser, Debug, Deserialize, Serialize)]
 #[command(version, about, long_about = None, arg_required_else_help = true)]
@@ -87,7 +87,13 @@ pub fn cli() -> Result<()> {
     } else {
         args.config_path
     };
-    let config = Config::from_path(&config_path)?;
+    let config = match Config::from_path(&config_path) {
+        Ok(c) => c,
+        Err(e) => {
+            error!("Error reading config file: {e}. Using defaults");
+            Config::default()
+        }
+    };
 
     let Some(subcommand) = &args.command else {
         return Ok(());
