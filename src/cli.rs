@@ -87,6 +87,11 @@ pub fn cli() -> Result<()> {
     } else {
         args.config_path
     };
+    if !config_path.exists() {
+        let p = config_path.display();
+        warn!("No config exists at {p}. Creating new file with defaults.");
+        fs::write(&config_path, toml::to_string_pretty(&Config::default())?)?
+    }
     let config = match Config::from_path(&config_path) {
         Ok(c) => c,
         Err(e) => {
