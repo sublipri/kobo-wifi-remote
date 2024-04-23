@@ -134,7 +134,7 @@ pub fn cli() -> Result<()> {
                 disable_server(&config, true)?;
             }
         }
-        Commands::Uninstall { dry_run } => uninstall(&config, *dry_run)?,
+        Commands::Uninstall { dry_run } => uninstall(&config, *dry_run, &config_path)?,
         Commands::Serve => server::serve(&config)?,
         Commands::Screenshot { delay, use_fbink } => screenshot(&config, *delay, *use_fbink)?,
         Commands::CreateConfig { path } => {
@@ -233,7 +233,7 @@ fn disable_server(config: &Config, now: bool) -> Result<()> {
     Ok(())
 }
 
-fn uninstall(config: &Config, dry_run: bool) -> Result<()> {
+fn uninstall(config: &Config, dry_run: bool, config_path: &Path) -> Result<()> {
     info!("Beginning uninstallation");
     if !dry_run {
         disable_server(config, true)?;
@@ -247,6 +247,7 @@ fn uninstall(config: &Config, dry_run: bool) -> Result<()> {
     delete_if_exists(&config.action_file(), dry_run)?;
     delete_if_exists(&config.action_file().with_extension("toml.bkp"), dry_run)?;
     delete_if_exists(&config.recordings_file(), dry_run)?;
+    delete_if_exists(config_path, dry_run)?;
     delete_if_exists(&config.recordings_file().with_extension("bin.bkp"), dry_run)?;
     cleanup_old_version(config, dry_run)?;
     // Delete empty tracked directories
