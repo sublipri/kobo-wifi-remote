@@ -127,13 +127,16 @@ export function promptFullscreen(timeout) {
   }
   modal.addEventListener(
     "touchend",
-    () => {
+    async () => {
       let body = document.querySelector("body");
       body.requestFullscreen();
+      // Touch might trigger a button if modal is closed immediately
+      await sleep(100);
       modal.style.display = "none";
     },
     false,
   );
+
   modal.onclick = function () {
     let body = document.querySelector("body");
     body.requestFullscreen();
