@@ -1,8 +1,8 @@
 import { sleep, getConfig, displayMsg, closeMsg } from "/js/lib.js";
 
 const config = await getConfig();
-const wsPort = config.arbitrary_input.websocket_port;
-const opts = config.arbitrary_input.client;
+const wsPort = config.user.arbitrary_input.websocket_port;
+const opts = config.user.arbitrary_input.client;
 const modal = document.getElementById("arbitrary-modal");
 const touchscreenHelp = document.getElementById("touchscreen-help-text");
 const keyboardHelp = document.getElementById("keyboard-help-text");

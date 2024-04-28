@@ -1,0 +1,36 @@
+<!--
+SPDX-FileCopyrightText: 2023 sublipri <sublipri@proton.me>
+SPDX-License-Identifier: GPL-3.0-only
+-->
+<!doctype html>
+<html>
+  <head>
+    <title>Kobo Wi-Fi Remote</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="/styles/main.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div style="text-align: center; width: 95vw">
+      <textarea id="toml-config" style="height: 80vh; width: 100%">
+      {{- config -}}
+      </textarea>
+    </div>
+    <p>
+      <button id="update-config-btn">Update Config</button>
+    </p>
+    <p>
+      <a href="javascript:history.back()"
+        ><button type="button" id="go-back">Go Back</button></a
+      >
+    </p>
+  </body>
+  <script type="module">
+    import { tryPost } from "/js/lib.js";
+    const btn = document.getElementById("update-config-btn");
+    btn.onclick = async function () {
+      let toml = document.getElementById("toml-config").value;
+      let body = JSON.stringify({ toml });
+      await tryPost("/config/user/toml", body, "Updated Config");
+    };
+  </script>
+</html>

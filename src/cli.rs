@@ -1,4 +1,5 @@
-use crate::{config::Config, server};
+use crate::config::{AppConfig, Config, UserConfig};
+use crate::server;
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -20,13 +21,20 @@ use tracing::{error, info, warn};
 #[derive(Parser, Debug, Deserialize, Serialize)]
 #[command(version, about, long_about = None, arg_required_else_help = true)]
 pub struct Cli {
-    /// Path to the config file
+    /// Path to the user config file
     #[arg(
         long,
         short,
-        default_value = "/mnt/onboard/.adds/wifiremote/wifiremote.toml"
+        default_value = "/mnt/onboard/.adds/wifiremote/user-config.toml"
     )]
-    pub config_path: PathBuf,
+    pub user_config: PathBuf,
+    /// Path to the app config file
+    #[arg(
+        long,
+        short,
+        default_value = "/mnt/onboard/.adds/wifiremote/app-config.toml"
+    )]
+    pub app_config: PathBuf,
     #[command(subcommand)]
     #[serde(skip)]
     pub command: Option<Commands>,
@@ -72,33 +80,59 @@ pub enum Commands {
         #[arg(long = "fbink")]
         use_fbink: bool,
     },
-    /// Create a config file with the default values
+    /// Create a user config file with the default values
     CreateConfig {
-        #[arg(long, short, default_value = "wifiremote.toml")]
+        #[arg(long, short, default_value = "user-config.toml")]
         path: PathBuf,
     },
+}
+
+pub fn load_config(args: &Cli) -> Result<Config> {
+    let user_config_path = if let Some(path) = env::var_os("WIFIREMOTE_USER_CONFIG") {
+        path.into()
+    } else {
+        args.user_config.clone()
+    };
+    if !user_config_path.exists() {
+        let p = user_config_path.display();
+        warn!("No config exists at {p}. Creating new file with defaults.");
+        fs::write(
+            &user_config_path,
+            toml::to_string_pretty(&UserConfig::default())?,
+        )
+        .context("Failed to write user config file")?
+    }
+    let user = match UserConfig::load(&user_config_path) {
+        Ok(c) => c,
+        Err(e) => {
+            error!("Error reading user config file: {e}. Using defaults");
+            UserConfig::default()
+        }
+    };
+    let app_config_path = if let Some(path) = env::var_os("WIFIREMOTE_APP_CONFIG") {
+        path.into()
+    } else {
+        args.app_config.clone()
+    };
+    let app = match AppConfig::load(&app_config_path) {
+        Ok(c) => c,
+        Err(e) => {
+            error!("Error reading app config file: {e}. Using defaults");
+            AppConfig::default()
+        }
+    };
+    Ok(Config {
+        user,
+        app,
+        app_config_path,
+        user_config_path,
+    })
 }
 
 pub fn cli() -> Result<()> {
     let args = Cli::parse();
 
-    let config_path = if let Some(path) = env::var_os("WIFIREMOTE_CONFIG_PATH") {
-        path.into()
-    } else {
-        args.config_path
-    };
-    if !config_path.exists() {
-        let p = config_path.display();
-        warn!("No config exists at {p}. Creating new file with defaults.");
-        fs::write(&config_path, toml::to_string_pretty(&Config::default())?)?
-    }
-    let config = match Config::from_path(&config_path) {
-        Ok(c) => c,
-        Err(e) => {
-            error!("Error reading config file: {e}. Using defaults");
-            Config::default()
-        }
-    };
+    let config = load_config(&args)?;
 
     let Some(subcommand) = &args.command else {
         return Ok(());
@@ -139,11 +173,11 @@ pub fn cli() -> Result<()> {
                 disable_server(&config, true)?;
             }
         }
-        Commands::Uninstall { dry_run } => uninstall(&config, *dry_run, &config_path)?,
+        Commands::Uninstall { dry_run } => uninstall(&config, *dry_run)?,
         Commands::Serve => server::serve(&config)?,
         Commands::Screenshot { delay, use_fbink } => screenshot(&config, *delay, *use_fbink)?,
         Commands::CreateConfig { path } => {
-            let config = Config::default();
+            let config = UserConfig::default();
             fs::write(path, toml::to_string_pretty(&config)?)?
         }
     }
@@ -238,7 +272,7 @@ fn disable_server(config: &Config, now: bool) -> Result<()> {
     Ok(())
 }
 
-fn uninstall(config: &Config, dry_run: bool, config_path: &Path) -> Result<()> {
+fn uninstall(config: &Config, dry_run: bool) -> Result<()> {
     info!("Beginning uninstallation");
     if !dry_run {
         disable_server(config, true)?;
@@ -252,7 +286,8 @@ fn uninstall(config: &Config, dry_run: bool, config_path: &Path) -> Result<()> {
     delete_if_exists(&config.action_file(), dry_run)?;
     delete_if_exists(&config.action_file().with_extension("toml.bkp"), dry_run)?;
     delete_if_exists(&config.recordings_file(), dry_run)?;
-    delete_if_exists(config_path, dry_run)?;
+    delete_if_exists(&config.user_config_path, dry_run)?;
+    delete_if_exists(&config.app_config_path, dry_run)?;
     delete_if_exists(&config.recordings_file().with_extension("bin.bkp"), dry_run)?;
     cleanup_old_version(config, dry_run)?;
     // Delete empty tracked directories
@@ -264,7 +299,7 @@ fn uninstall(config: &Config, dry_run: bool, config_path: &Path) -> Result<()> {
 
 fn cleanup_old_version(config: &Config, dry_run: bool) -> Result<()> {
     // Remove any files/directories that were dynamically generated by wifiremote 0.1.x
-    let events_dir = config.data_dir.join("events");
+    let events_dir = config.app.data_dir.join("events");
     if events_dir.exists() {
         for entry in fs::read_dir(events_dir)? {
             delete_if_exists(&entry?.path(), dry_run)?;
@@ -323,7 +358,7 @@ fn screenshot(config: &Config, delay: u64, use_fbink: bool) -> Result<()> {
     let bytes = fbink.screenshot(ImageOutputFormat::Png)?;
     let timestamp = Local::now().format("%Y%m%d-%H%M-%S");
     let filename = format!("{}-{timestamp}.png", slugify(fbink.state().device_id));
-    let out_dir = config.user_dir.join("screenshots");
+    let out_dir = config.app.user_dir.join("screenshots");
     fs::create_dir_all(&out_dir)?;
     let out_file = out_dir.join(&filename);
     fs::write(out_file, bytes)?;

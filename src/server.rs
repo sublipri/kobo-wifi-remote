@@ -46,7 +46,8 @@ pub async fn serve(config: &Config) -> Result<()> {
     };
     let mut manager =
         ActionManager::from_path(config.action_file(), config.recordings_file(), fbink, rx)?;
-    if config.arbitrary_input.enabled {
+    let c = &config.user;
+    if c.page_turner.enable_arbitrary_input || c.remote_control.enable_arbitrary_input {
         if let Ok(template) = manager.recordings.get_any("next-page") {
             match InputManager::new(template.clone(), state.fbink.clone(), config) {
                 Ok(mut input_manager) => {
@@ -75,7 +76,7 @@ pub async fn serve(config: &Config) -> Result<()> {
     )
     .layer(app);
     let app = ServiceExt::<Request>::into_make_service(app);
-    let host = format!("0.0.0.0:{}", config.port);
+    let host = format!("0.0.0.0:{}", config.app.port);
     let listener = tokio::net::TcpListener::bind(&host)
         .await
         .with_context(|| format!("Failed to bind TcpListener to {}", &host))?;

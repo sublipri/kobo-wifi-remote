@@ -38,7 +38,7 @@ SPDX-License-Identifier: GPL-3.0-only
         </button>
       {% endfor -%}
     </div>
-    {% if enable_arbitrary -%}
+    {% if opts.enable_arbitrary_input -%}
       {% include "arbitrary-input.html" -%}
     {% endif -%}
   </body>
@@ -46,7 +46,7 @@ SPDX-License-Identifier: GPL-3.0-only
     {{shortcuts_json|safe}}
   </script>
   <script type="module">
-    {% if enable_arbitrary -%}
+    {% if opts.enable_arbitrary_input -%}
       import { detectionActive } from "/js/arbitrary-input.js";
     {% endif -%}
     import { playAction, promptFullscreen } from "/js/lib.js";
@@ -65,7 +65,7 @@ SPDX-License-Identifier: GPL-3.0-only
         continue;
       }
       window.addEventListener("keydown", (e) => {
-        {% if enable_arbitrary -%}
+        {% if opts.enable_arbitrary_input -%}
           if (detectionActive) {
             return
           }
@@ -75,7 +75,7 @@ SPDX-License-Identifier: GPL-3.0-only
         }
       });
     }
-    {% if prompt_fullscreen -%}
+    {% if opts.prompt_fullscreen -%}
       window.onload = promptFullscreen(2000);
     {% endif -%}
   </script>

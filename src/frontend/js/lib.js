@@ -110,6 +110,26 @@ export async function changeSetting(section, key, value) {
   }
 }
 
+export async function tryPost(uri, body, successMsg) {
+  const request = {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body,
+  };
+  const response = await fetch(uri, request);
+  if (response.ok) {
+    console.log(response);
+    if (successMsg) {
+      await displayMsg(successMsg, 2000);
+    }
+  } else {
+    await displayMsg(await response.text());
+  }
+}
+
 export function promptFullscreen(timeout) {
   let modal = document.getElementById("fullscreen-modal");
   if (!modal) {

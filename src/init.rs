@@ -71,7 +71,7 @@ pub fn first_run(config: &Config, fbink: Arc<FbInk>) -> Result<()> {
                 .with_context(|| format!("Failed to write {}", &meta.display()))?;
         }
     }
-    let port = config.port;
+    let port = config.app.port;
     thread::spawn(move || display_ip_address(port, fbink));
     Ok(())
 }

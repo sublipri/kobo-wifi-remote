@@ -1,7 +1,8 @@
 use crate::{actions::ActionMsg, errors::AppError, kobo_config::KoboConfigFile, server::AppState};
 
-use std::collections::HashMap;
+use std::{collections::HashMap, fs};
 
+use anyhow::Context;
 use askama::Template;
 use axum::{
     extract::State,
@@ -33,6 +34,7 @@ pub fn routes() -> Router<AppState> {
         .route("/auto-turner", get(auto_turner))
         .route("/developer-settings", get(developer_settings))
         .route("/voice-activation", get(voice_activation))
+        .route("/edit-config", get(edit_config))
         .route("/styles/main.css", get(main_css))
         .route("/styles/remote.css", get(remote_css))
         .route("/js/record-action.js", get(record_action_js))
@@ -67,10 +69,9 @@ async fn arbitrary_input_js() -> impl IntoResponse {
 }
 
 async fn index(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
-    let items = state.config.index.items.iter().filter(|i| i.enabled);
     let index = templates::Index {
-        items: items.collect(),
-        button_height: state.config.index.button_height,
+        items: state.config.user.index.items(),
+        opts: &state.config.user.index,
     };
     Ok((html_header(), index.render()?))
 }
@@ -87,8 +88,7 @@ async fn remote_control(State(state): State<AppState>) -> Result<impl IntoRespon
     Ok(templates::RemoteControl {
         actions,
         shortcuts_json,
-        enable_arbitrary: state.config.arbitrary_input.enabled,
-        prompt_fullscreen: state.config.prompt_fullscreen,
+        opts: state.config.user.remote_control,
     })
 }
 
@@ -108,8 +108,7 @@ async fn page_turner(State(state): State<AppState>) -> Result<impl IntoResponse,
     Ok(templates::PageTurner {
         next,
         prev,
-        enable_arbitrary: state.config.arbitrary_input.enabled,
-        prompt_fullscreen: state.config.prompt_fullscreen,
+        opts: state.config.user.page_turner,
     })
 }
 
@@ -129,7 +128,7 @@ async fn auto_turner(State(state): State<AppState>) -> Result<impl IntoResponse,
     Ok(templates::AutoTurner {
         next,
         prev,
-        delay: state.config.auto_turner_delay,
+        delay: state.config.user.auto_turner.default_delay,
     })
 }
 
@@ -145,7 +144,7 @@ async fn developer_settings() -> Result<impl IntoResponse, AppError> {
 
 async fn voice_activation(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
     Ok(templates::VoiceActivation {
-        language_code: state.config.voice_language_code,
+        language_code: state.config.user.voice_activation.language_code,
     })
 }
 
@@ -154,6 +153,14 @@ async fn manage_actions(State(state): State<AppState>) -> Result<impl IntoRespon
     state.tx.send(ActionMsg::List { resp: tx }).await?;
     let actions = rx.await?;
     Ok(templates::ManageActions { actions })
+}
+
+async fn edit_config(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    // Read the TOML directly rather than serializing the config so that an invalid config can be
+    // edited rather than overwritten by the defaults
+    let config = fs::read_to_string(state.config.user_config_path)
+        .context("Failed to read user config file")?;
+    Ok(templates::EditConfig { config })
 }
 
 fn js_header() -> HeaderMap {

@@ -49,7 +49,7 @@ SPDX-License-Identifier: GPL-3.0-only
           {% else -%}
             title="Previous Page (Shortcut: ArrowLeft or KeyA)"
           {% endif -%}
-          style="background-color: #5783db"
+          style="background-color: {{opts.prev_color}}"
           type="button"
         >
           {{ prev.name }}
@@ -62,13 +62,13 @@ SPDX-License-Identifier: GPL-3.0-only
           {% else -%}
             title="Next Page (Shortcut: ArrowRight or KeyD)"
           {% endif -%}
-          style="background-color: #33b249"
+          style="background-color: {{opts.next_color}}"
           type="button"
         >
           {{ next.name }}
         </button>
       </div>
-      {% if enable_arbitrary -%}
+      {% if opts.enable_arbitrary_input -%}
         {% include "arbitrary-input.html" -%}
       {% endif -%}
     {% endif -%}
@@ -77,7 +77,7 @@ SPDX-License-Identifier: GPL-3.0-only
     {% let next = next.as_ref().unwrap() -%}
     {% let prev = prev.as_ref().unwrap() -%}
     <script type="module">
-      {% if enable_arbitrary -%}
+      {% if opts.enable_arbitrary_input -%}
         import { detectionActive } from "/js/arbitrary-input.js";
       {% endif -%}
       import { playAction, closeMsg, promptFullscreen } from "/js/lib.js";
@@ -97,7 +97,7 @@ SPDX-License-Identifier: GPL-3.0-only
       window.addEventListener(
         "keydown",
         (event) => {
-          {% if enable_arbitrary -%}
+          {% if opts.enable_arbitrary_input -%}
             if (detectionActive) {
               return
             }
@@ -126,7 +126,7 @@ SPDX-License-Identifier: GPL-3.0-only
         },
         false,
       );
-      {% if prompt_fullscreen -%}
+      {% if opts.prompt_fullscreen -%}
         window.onload = promptFullscreen(2000);
       {% endif -%}
     </script>

@@ -2,13 +2,18 @@ use askama::Template;
 use chrono::Duration;
 
 use super::index::IndexItem;
-use crate::{actions::ListActionResponse, kobo_config::KoboConfigSetting};
+use crate::{
+    actions::ListActionResponse,
+    config::{PageTurnerOptions, RemoteOptions},
+    frontend::index::IndexOptions,
+    kobo_config::KoboConfigSetting,
+};
 
 #[derive(Template)]
 #[template(path = "index.html")]
 pub struct Index<'a> {
-    pub button_height: f32,
-    pub items: Vec<&'a IndexItem>,
+    pub opts: &'a IndexOptions,
+    pub items: Vec<IndexItem<'a>>,
 }
 
 #[derive(Template)]
@@ -24,8 +29,7 @@ pub struct CustomActions {}
 pub struct PageTurner {
     pub next: Option<ListActionResponse>,
     pub prev: Option<ListActionResponse>,
-    pub enable_arbitrary: bool,
-    pub prompt_fullscreen: bool,
+    pub opts: PageTurnerOptions,
 }
 
 #[derive(Template)]
@@ -43,8 +47,7 @@ pub struct DeveloperSettings {
 pub struct RemoteControl {
     pub actions: Vec<ListActionResponse>,
     pub shortcuts_json: String,
-    pub enable_arbitrary: bool,
-    pub prompt_fullscreen: bool,
+    pub opts: RemoteOptions,
 }
 
 #[derive(Template)]
@@ -65,4 +68,10 @@ pub struct AutoTurner {
 #[template(path = "voice-activation.html")]
 pub struct VoiceActivation {
     pub language_code: String,
+}
+
+#[derive(Template)]
+#[template(path = "edit-config.html")]
+pub struct EditConfig {
+    pub config: String,
 }

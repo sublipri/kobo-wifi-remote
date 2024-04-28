@@ -26,7 +26,6 @@ use tungstenite::accept;
 #[serde_with::serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct InputOptions {
-    pub enabled: bool,
     pub websocket_port: u16,
     pub cursor_width: u16,
     pub cursor_height: u16,
@@ -47,7 +46,6 @@ pub struct InputOptions {
 impl Default for InputOptions {
     fn default() -> Self {
         Self {
-            enabled: true,
             websocket_port: 9001,
             cursor_width: 32,
             cursor_height: 50,
@@ -187,10 +185,10 @@ impl InputManager {
         let start_events = get_event_batch(&mut iter)?;
         let move_events = get_event_batch(&mut iter)?;
         let stop_events = get_event_batch(&mut iter)?;
-        let opts = config.arbitrary_input.clone();
+        let opts = config.user.arbitrary_input.clone();
         let current_coord = None;
         let cursor_path = if opts.custom_cursor_path.is_relative() {
-            config.user_dir.join(&opts.custom_cursor_path)
+            config.app.user_dir.join(&opts.custom_cursor_path)
         } else {
             opts.custom_cursor_path.clone()
         };
