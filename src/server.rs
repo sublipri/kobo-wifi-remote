@@ -4,7 +4,10 @@ use crate::{
     init::init,
 };
 
-use std::{sync::Arc, thread};
+use std::{
+    sync::{Arc, Mutex, MutexGuard},
+    thread,
+};
 
 use anyhow::{Context, Result};
 use axum::{
@@ -24,7 +27,13 @@ use tracing::{error, info};
 pub struct AppState {
     pub tx: mpsc::Sender<ActionMsg>,
     pub fbink: Arc<FbInk>,
-    pub config: Config,
+    pub config: Arc<Mutex<Config>>,
+}
+
+impl AppState {
+    pub fn config(&self) -> MutexGuard<'_, Config> {
+        self.config.lock().expect("Failed to lock Config")
+    }
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -42,7 +51,7 @@ pub async fn serve(config: &Config) -> Result<()> {
     let state = AppState {
         tx,
         fbink: fbink.clone(),
-        config: config.clone(),
+        config: Arc::new(Mutex::new(config.clone())),
     };
     let mut manager =
         ActionManager::from_path(config.action_file(), config.recordings_file(), fbink, rx)?;

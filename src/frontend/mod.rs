@@ -69,9 +69,10 @@ async fn arbitrary_input_js() -> impl IntoResponse {
 }
 
 async fn index(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let config = state.config();
     let index = templates::Index {
-        items: state.config.user.index.items(),
-        opts: &state.config.user.index,
+        items: config.user.index.items(),
+        opts: &config.user.index,
     };
     Ok((html_header(), index.render()?))
 }
@@ -88,7 +89,7 @@ async fn remote_control(State(state): State<AppState>) -> Result<impl IntoRespon
     Ok(templates::RemoteControl {
         actions,
         shortcuts_json,
-        opts: state.config.user.remote_control,
+        opts: state.config().user.remote_control.clone(),
     })
 }
 
@@ -108,7 +109,7 @@ async fn page_turner(State(state): State<AppState>) -> Result<impl IntoResponse,
     Ok(templates::PageTurner {
         next,
         prev,
-        opts: state.config.user.page_turner,
+        opts: state.config().user.page_turner.clone(),
     })
 }
 
@@ -128,7 +129,7 @@ async fn auto_turner(State(state): State<AppState>) -> Result<impl IntoResponse,
     Ok(templates::AutoTurner {
         next,
         prev,
-        delay: state.config.user.auto_turner.default_delay,
+        delay: state.config().user.auto_turner.default_delay,
     })
 }
 
@@ -143,8 +144,9 @@ async fn developer_settings() -> Result<impl IntoResponse, AppError> {
 }
 
 async fn voice_activation(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let config = state.config();
     Ok(templates::VoiceActivation {
-        language_code: state.config.user.voice_activation.language_code,
+        language_code: config.user.voice_activation.language_code.clone(),
     })
 }
 
@@ -158,9 +160,9 @@ async fn manage_actions(State(state): State<AppState>) -> Result<impl IntoRespon
 async fn edit_config(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
     // Read the TOML directly rather than serializing the config so that an invalid config can be
     // edited rather than overwritten by the defaults
-    let config = fs::read_to_string(state.config.user_config_path)
+    let toml = fs::read_to_string(&state.config().user_config_path)
         .context("Failed to read user config file")?;
-    Ok(templates::EditConfig { config })
+    Ok(templates::EditConfig { config: toml })
 }
 
 fn js_header() -> HeaderMap {

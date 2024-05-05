@@ -239,14 +239,16 @@ async fn update_user_toml(
     State(state): State<AppState>,
     Json(edited): Json<UpdateTomlRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let _: UserConfig = toml::from_str(&edited.toml)?; // Validate the edited config
-    fs::write(state.config.user_config_path, &edited.toml)
+    let user: UserConfig = toml::from_str(&edited.toml)?;
+    let mut config = state.config();
+    fs::write(&config.user_config_path, &edited.toml)
         .context("Failed to write user config file")?;
+    config.user = user;
     Ok(())
 }
 
 async fn get_user_toml(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
-    let toml = fs::read_to_string(state.config.user_config_path)
+    let toml = fs::read_to_string(&state.config().user_config_path)
         .context("Failed to read user config file")?;
     Ok(toml)
 }
