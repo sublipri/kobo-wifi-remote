@@ -25,10 +25,7 @@ pub fn routes() -> Router<AppState> {
             "/troubleshooting",
             get(|| async { templates::Troubleshooting {} }),
         )
-        .route(
-            "/custom-actions",
-            get(|| async { templates::CustomActions {} }),
-        )
+        .route("/custom-actions", get(custom_actions))
         .route("/manage-actions", get(manage_actions))
         .route("/remote-control", get(remote_control))
         .route("/auto-turner", get(auto_turner))
@@ -147,6 +144,12 @@ async fn voice_activation(State(state): State<AppState>) -> Result<impl IntoResp
     let config = state.config();
     Ok(templates::VoiceActivation {
         language_code: config.user.voice_activation.language_code.clone(),
+    })
+}
+
+async fn custom_actions(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    Ok(templates::CustomActions {
+        opts: state.config().user.custom_action_defaults.clone(),
     })
 }
 

@@ -13,7 +13,7 @@ SPDX-License-Identifier: GPL-3.0-only
   <body style="margin: 0; padding: 0">
     <br />
     <form class="action-form" id="record-action-form">
-      <label for="name">Display Name:</label><br />
+      <label for="name">Display Name</label><br />
       <input
         type="text"
         id="name"
@@ -21,7 +21,7 @@ SPDX-License-Identifier: GPL-3.0-only
         title="The name to display in the remote control"
         required
       /><br />
-      <label for="sort-value">Sort Value:</label><br />
+      <label for="sort-value">Sort Value</label><br />
       <input
         type="text"
         id="sort-value"
@@ -29,7 +29,7 @@ SPDX-License-Identifier: GPL-3.0-only
         placeholder="Optional"
         title="Used to sort the buttons in the remote control. Defaults to display name."
       /><br />
-      <label for="keyboard_shortcut">Keyboard Shortcut:</label><br />
+      <label for="keyboard_shortcut">Keyboard Shortcut</label><br />
       <input
         type="text"
         id="keyboard-shortcut"
@@ -47,9 +47,9 @@ SPDX-License-Identifier: GPL-3.0-only
       /><br />
       <br />
       <details>
-        <summary>Advanced Options:</summary>
+        <summary>Advanced Options</summary>
         <br />
-        <label for="path_segment">URL Path Segment:</label><br />
+        <label for="path_segment">URL Path Segment</label><br />
         <input
           type="text"
           id="path-segment"
@@ -57,71 +57,86 @@ SPDX-License-Identifier: GPL-3.0-only
           title="Derived from the display name if left blank"
           placeholder="Optional"
         /><br />
-        <label for="post-playback-delay">Post-Playback Delay (ms):</label><br />
+        <label for="post-playback-delay">Post-Playback Delay (ms)</label><br />
         <input
           type="number"
           id="post-playback-delay"
           name="post_playback_delay"
           class="input-number"
-          value="300"
+          value="{{opts.post_playback_delay.num_milliseconds()}}"
           title="How long in milliseconds to wait after replaying the input before playing another action"
           step="50"
         /><br />
-        <label for="no-input-timeout">No Input Timeout (ms):</label><br />
+        <label for="no-input-timeout">No Input Timeout (ms)</label><br />
         <input
           type="number"
           id="no-input-timeout"
           name="no_input_timeout"
           class="input-number"
-          value="5000"
+          value="{{opts.no_input_timeout.num_milliseconds()}}"
           title="How long in milliseconds to wait without input before stopping recording"
           min="1000"
           step="500"
           required
         /><br />
-        <label for="new-event-timeout">New Input Timeout (ms):</label><br />
+        <label for="new-event-timeout">New Input Timeout (ms)</label><br />
         <input
           type="number"
           id="new-event-timeout"
           name="new_event_timeout"
           class="input-number"
-          value="4000"
+          value="{{opts.new_event_timeout.num_milliseconds()}}"
           title="How long in milliseconds to wait after the last input before stopping recording"
           min="100"
           step="100"
         /><br />
-        <label for="only-check-touch">Only Check Touchscreen:</label><br />
+        <label for="only-check-touch">Only Check Touchscreen</label><br />
         <input
           type="checkbox"
           id="only-check-touch"
           name="only_check_touch"
           title="Only check for input on the touchscreen"
+          {% if opts.only_check_touch -%}
           checked
+          {%- endif %}
         /><br />
-        <label for="optimize-input">Optimize Input:</label><br />
+        <label for="optimize-input">Optimize Input</label><br />
         <input
           type="checkbox"
           id="optimize-input"
           name="optimize"
           title="Optimize actions that consist of a single tap or swipe so they replay quicker"
+          {% if opts.optimize -%}
+          checked
+          {%- endif %}
         /><br />
-        <label for="syn-gap">Optimized Event Gap (μs):</label><br />
+        <label for="use-by-path">Use /dev/input/by-path/</label><br />
+        <input
+          type="checkbox"
+          id="use-by-path"
+          name="use_by_path"
+          title="Look for input devices in /dev/input/by-path/ instead of /dev/input/"
+          {% if opts.use_by_path -%}
+          checked
+          {%- endif %}
+        /><br />
+        <label for="syn-gap">Optimized Event Gap (μs)</label><br />
         <input
           type="number"
           id="syn-gap"
           name="syn_gap"
           class="input-number"
-          value="1"
+          value="{{opts.syn_gap.num_microseconds().unwrap_or(1)}}"
           title="How long in microseconds to make the gap between input event batches when optimizing"
           min="1"
         /><br />
-        <label for="poll-wait">Poll Frequency (ms):</label><br />
+        <label for="poll-wait">Poll Frequency (ms)</label><br />
         <input
           type="number"
           id="poll-wait"
           name="poll_wait"
           class="input-number"
-          value="10"
+          value="{{opts.poll_wait.num_milliseconds()}}"
           title="How often in milliseconds to check for input"
           min="1"
         /><br />
