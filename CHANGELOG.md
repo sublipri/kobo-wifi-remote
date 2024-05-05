@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.2.0
+## 0.2.0 - 2024-03-07
 
 This release replaces BusyBox httpd + shell scripts with a new backend written in Rust, which along with [bindings](https://github.com/sublipri/fbink-rs) for [FBInk](https://github.com/NiLuJe/FBInk) brings new features and various improvements. Due to the significant changes, you'll need to redo the initial setup after upgrading. You can upgrade in place, but you may wish to uninstall the previous version first to remove lots of no-longer needed files (they'll still be removed if you uninstall in the future).
 
@@ -28,3 +29,17 @@ This release replaces BusyBox httpd + shell scripts with a new backend written i
 
 ### Fixed
 - The server should now work with hardware using KoboPageTurner's [code](https://github.com/tylpk1216/KoboPageTurner/blob/master/ESP8266/SoftAP_No_OTA.ino) without having to add a `/` to the endpoints.
+
+## 0.1.1 - 2023-08-06
+
+### Added
+- Debug logging via syslog.
+- A troubleshooting page with steps to follow and a link that generates a log file.
+
+### Fixed
+- Stopping httpd now works if a child process is running.
+- Minor fixes and improvements.
+
+## 0.1.0 - 2023-07-29
+
+Initial release
