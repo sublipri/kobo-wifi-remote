@@ -2,15 +2,20 @@
 
 Kobo Wi-Fi Remote is a remote control/page turner for Kobo e-readers. It installs a server on your device that can record and replay touchscreen inputs via a web interface. It is **not** safe to use on public Wi-Fi networks.
 
+## Supported Devices
+
+It should work on any Kobo e-reader released between 2011 and 2023, but is only actively tested on a Glo and Sage with recent firmware.
+
+If the latest version doesn't work on your device, try [version 0.1.1](https://github.com/sublipri/kobo-wifi-remote/releases/tag/v0.1.1). That's more generic in how it functions, but is slower and has fewer features.
+
 ## Features
 
 - A simple interface designed for smartphones and users with limited dexterity.
 - Keyboard shortcuts for use with a computer.
-- Take screenshots using a web browser or NickelMenu.
-- Probably supports all Kobo e-readers with touch screens (tested on a Glo and Sage running the latest firmware).
 - Custom actions (e.g. adjust the brightness).
-- Trigger actions with a GET request -- use with a [DIY hardware remote](https://www.mobileread.com/forums/showpost.php?p=4351236&postcount=28) or your [smart watch](https://www.mobileread.com/forums/showpost.php?p=4376646&postcount=30)
 - A [NickelMenu](https://pgaskin.net/NickelMenu/) entry and [KOReader](https://koreader.rocks/) plugin for toggling the server.
+- Take screenshots using a web browser or NickelMenu.
+- Trigger actions with a GET request -- use with a [DIY hardware remote](https://www.mobileread.com/forums/showpost.php?p=4351236&postcount=28) or your [smart watch](https://www.mobileread.com/forums/showpost.php?p=4376646&postcount=30)
 
 There are some screenshots in the thread on [MobileRead](https://www.mobileread.com/forums/showthread.php?t=355368).
 
