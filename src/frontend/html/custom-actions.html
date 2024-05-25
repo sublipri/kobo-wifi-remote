@@ -140,6 +140,17 @@ SPDX-License-Identifier: GPL-3.0-only
           title="How often in milliseconds to check for input"
           min="1"
         /><br />
+        <label for="optimize-max-duration">Optimize Max Duration (ms)</label><br />
+        <input
+          type="number"
+          id="optimize-max-duration"
+          name="optimize_max_duration"
+          class="input-number"
+          value="{{opts.optimize_max_duration.num_milliseconds()}}"
+          title="Don't try to optimize recordings longer than this amount of milliseconds"
+          min="100"
+          step="100"
+        /><br />
       </details>
       <p>
         <button
