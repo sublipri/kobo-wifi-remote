@@ -19,7 +19,7 @@ mod templates;
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", get(index))
-        .route("/setup", get(|| async { templates::Setup {} }))
+        .route("/setup", get(setup))
         .route("/page-turner", get(page_turner))
         .route(
             "/troubleshooting",
@@ -144,6 +144,12 @@ async fn voice_activation(State(state): State<AppState>) -> Result<impl IntoResp
     let config = state.config();
     Ok(templates::VoiceActivation {
         language_code: config.user.voice_activation.language_code.clone(),
+    })
+}
+
+async fn setup(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    Ok(templates::Setup {
+        opts: state.config().user.setup.clone(),
     })
 }
 

@@ -60,6 +60,7 @@ pub struct UserConfig {
     pub remote_control: RemoteOptions,
     pub auto_turner: AutoTurnerOptions,
     pub voice_activation: VoiceActivationOptions,
+    pub setup: SetupOptions,
     pub custom_action_defaults: CustomActionOptions,
     pub arbitrary_input: InputOptions,
     pub index: IndexOptions,
@@ -132,6 +133,39 @@ impl Default for PageTurnerOptions {
             prev_color: "#5783db".into(),
             enable_arbitrary_input: true,
             prompt_fullscreen: false,
+        }
+    }
+}
+
+#[serde_with::serde_as]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SetupOptions {
+    pub only_check_touch: bool,
+    pub optimize: bool,
+    pub use_by_path: bool,
+    #[serde_as(as = "DurationMilliSeconds<i64>")]
+    pub post_playback_delay: Duration,
+    #[serde_as(as = "DurationMicroSeconds<i64>")]
+    pub syn_gap: Duration,
+    #[serde_as(as = "DurationMilliSeconds<i64>")]
+    pub no_input_timeout: Duration,
+    #[serde_as(as = "DurationMilliSeconds<i64>")]
+    pub new_event_timeout: Duration,
+    #[serde_as(as = "DurationMilliSeconds<i64>")]
+    pub poll_wait: Duration,
+}
+
+impl Default for SetupOptions {
+    fn default() -> Self {
+        Self {
+            only_check_touch: true,
+            optimize: true,
+            use_by_path: false,
+            post_playback_delay: Duration::milliseconds(300),
+            syn_gap: Duration::microseconds(1),
+            no_input_timeout: Duration::milliseconds(5000),
+            new_event_timeout: Duration::milliseconds(250),
+            poll_wait: Duration::milliseconds(10),
         }
     }
 }

@@ -1,0 +1,55 @@
+
+      <input
+        type="checkbox"
+        name="optimize"
+        style="display: none"
+        {% if opts.optimize -%}
+        checked
+        {%- endif %}
+      />
+      <input 
+        type="checkbox"
+        name="only_check_touch"
+        style="display: none" 
+        {% if opts.only_check_touch -%}
+        checked
+        {%- endif %}
+      />
+      <input 
+        type="checkbox"
+        name="use_by_path"
+        style="display: none" 
+        {% if opts.use_by_path -%}
+        checked
+        {%- endif %}
+      />
+      <input
+        type="hidden"
+        name="no_input_timeout"
+        value="{{opts.no_input_timeout.num_milliseconds()}}"
+        class="input-number"
+      />
+      <input
+        type="hidden"
+        name="new_event_timeout"
+        value="{{opts.new_event_timeout.num_milliseconds()}}"
+        class="input-number"
+      />
+      <input
+        type="hidden"
+        name="post_playback_delay"
+        value="{{opts.post_playback_delay.num_milliseconds()}}"
+        class="input-number"
+      />
+      <input
+        type="hidden"
+        name="syn_gap"
+        value="{{opts.syn_gap.num_microseconds().unwrap_or(1)}}"
+        class="input-number"
+      />
+      <input
+        type="hidden"
+        name="poll_wait"
+        value="{{opts.poll_wait.num_milliseconds()}}"
+        class="input-number"
+      />

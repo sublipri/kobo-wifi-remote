@@ -4,7 +4,7 @@ use chrono::Duration;
 use super::index::IndexItem;
 use crate::{
     actions::ListActionResponse,
-    config::{CustomActionOptions, PageTurnerOptions, RemoteOptions},
+    config::{CustomActionOptions, PageTurnerOptions, RemoteOptions, SetupOptions},
     frontend::index::IndexOptions,
     kobo_config::KoboConfigSetting,
 };
@@ -18,7 +18,9 @@ pub struct Index<'a> {
 
 #[derive(Template)]
 #[template(path = "setup.html")]
-pub struct Setup {}
+pub struct Setup {
+    pub opts: SetupOptions,
+}
 
 #[derive(Template)]
 #[template(path = "custom-actions.html")]
