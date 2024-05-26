@@ -72,6 +72,7 @@ pub enum Commands {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Save a PNG of the e-reader's screen in the user directory
     Screenshot {
         /// How long in seconds to wait before taking the screenshot
         #[arg(long, default_value_t = 0)]
