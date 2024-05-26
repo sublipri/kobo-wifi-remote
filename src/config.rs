@@ -31,6 +31,8 @@ pub struct AppConfig {
     pub udev_dir: PathBuf,
     pub user_dir: PathBuf,
     pub port: u32,
+    pub allow_remote_restart: bool,
+    pub allow_remote_shutdown: bool,
 }
 
 impl Default for AppConfig {
@@ -40,6 +42,8 @@ impl Default for AppConfig {
             udev_dir: "/etc/udev/rules.d".into(),
             user_dir: "/mnt/onboard/.adds/wifiremote".into(),
             port: 80,
+            allow_remote_restart: true,
+            allow_remote_shutdown: false,
         }
     }
 }

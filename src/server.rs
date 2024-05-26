@@ -76,6 +76,7 @@ pub async fn serve(config: &Config) -> Result<()> {
         .merge(crate::kobo_config::routes())
         .merge(crate::screenshot::routes())
         .merge(crate::logging::routes())
+        .merge(crate::management::routes())
         .with_state(state);
 
     let app = NormalizePathLayer::trim_trailing_slash().layer(app);
