@@ -81,8 +81,13 @@ pub enum Commands {
         use_fbink: bool,
     },
     /// Create a user config file with the default values
-    CreateConfig {
+    CreateUserConfig {
         #[arg(long, short, default_value = "user-config.toml")]
+        path: PathBuf,
+    },
+    /// Create an app config file with the default values
+    CreateAppConfig {
+        #[arg(long, short, default_value = "app-config.toml")]
         path: PathBuf,
     },
 }
@@ -95,7 +100,7 @@ pub fn load_config(args: &Cli) -> Result<Config> {
     };
     if !user_config_path.exists() {
         let p = user_config_path.display();
-        warn!("No config exists at {p}. Creating new file with defaults.");
+        warn!("No user config exists at {p}. Creating new file with defaults.");
         fs::write(
             &user_config_path,
             toml::to_string_pretty(&UserConfig::default())?,
@@ -109,11 +114,21 @@ pub fn load_config(args: &Cli) -> Result<Config> {
             UserConfig::default()
         }
     };
+
     let app_config_path = if let Some(path) = env::var_os("WIFIREMOTE_APP_CONFIG") {
         path.into()
     } else {
         args.app_config.clone()
     };
+    if !app_config_path.exists() {
+        let p = app_config_path.display();
+        warn!("No app config exists at {p}. Creating new file with defaults.");
+        fs::write(
+            &app_config_path,
+            toml::to_string_pretty(&AppConfig::default())?,
+        )
+        .context("Failed to write app config file")?
+    }
     let app = match AppConfig::load(&app_config_path) {
         Ok(c) => c,
         Err(e) => {
@@ -176,8 +191,14 @@ pub fn cli() -> Result<()> {
         Commands::Uninstall { dry_run } => uninstall(&config, *dry_run)?,
         Commands::Serve => server::serve(&config)?,
         Commands::Screenshot { delay, use_fbink } => screenshot(&config, *delay, *use_fbink)?,
-        Commands::CreateConfig { path } => {
+        Commands::CreateUserConfig { path } => {
             let config = UserConfig::default();
+            info!("Writing user config to {}", path.display());
+            fs::write(path, toml::to_string_pretty(&config)?)?
+        }
+        Commands::CreateAppConfig { path } => {
+            let config = AppConfig::default();
+            info!("Writing app config to {}", path.display());
             fs::write(path, toml::to_string_pretty(&config)?)?
         }
     }
