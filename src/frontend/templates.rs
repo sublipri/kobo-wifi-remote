@@ -3,7 +3,7 @@ use chrono::Duration;
 
 use super::index::IndexItem;
 use crate::{
-    actions::ListActionResponse,
+    actions::ActionDetails,
     config::{CustomActionOptions, PageTurnerOptions, RemoteOptions, SetupOptions},
     frontend::index::IndexOptions,
     kobo_config::KoboConfigSetting,
@@ -31,8 +31,8 @@ pub struct CustomActions {
 #[derive(Template)]
 #[template(path = "page-turner.html")]
 pub struct PageTurner {
-    pub next: Option<ListActionResponse>,
-    pub prev: Option<ListActionResponse>,
+    pub next: Option<ActionDetails>,
+    pub prev: Option<ActionDetails>,
     pub opts: PageTurnerOptions,
 }
 
@@ -49,7 +49,7 @@ pub struct DeveloperSettings {
 #[derive(Template)]
 #[template(path = "remote-control.html")]
 pub struct RemoteControl {
-    pub actions: Vec<ListActionResponse>,
+    pub actions: Vec<ActionDetails>,
     pub shortcuts_json: String,
     pub opts: RemoteOptions,
 }
@@ -57,14 +57,14 @@ pub struct RemoteControl {
 #[derive(Template)]
 #[template(path = "manage-actions.html")]
 pub struct ManageActions {
-    pub actions: Vec<ListActionResponse>,
+    pub actions: Vec<ActionDetails>,
 }
 
 #[derive(Template)]
 #[template(path = "auto-turner.html")]
 pub struct AutoTurner {
-    pub next: Option<ListActionResponse>,
-    pub prev: Option<ListActionResponse>,
+    pub next: Option<ActionDetails>,
+    pub prev: Option<ActionDetails>,
     pub delay: Duration,
 }
 

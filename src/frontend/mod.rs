@@ -92,40 +92,22 @@ async fn remote_control(State(state): State<AppState>) -> Result<impl IntoRespon
 
 async fn page_turner(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
     let (tx, rx) = oneshot::channel();
-    state.tx.send(ActionMsg::List { resp: tx }).await?;
-    let actions = rx.await?;
-    let mut next = None;
-    let mut prev = None;
-    for action in actions.into_iter() {
-        match action.path_segment.as_str() {
-            "next-page" => next = Some(action),
-            "prev-page" => prev = Some(action),
-            _ => continue,
-        }
-    }
+    state.tx.send(ActionMsg::GetPageTurns { resp: tx }).await?;
+    let page_turns = rx.await?;
     Ok(templates::PageTurner {
-        next,
-        prev,
+        next: page_turns.next,
+        prev: page_turns.prev,
         opts: state.config().user.page_turner.clone(),
     })
 }
 
 async fn auto_turner(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
     let (tx, rx) = oneshot::channel();
-    state.tx.send(ActionMsg::List { resp: tx }).await?;
-    let actions = rx.await?;
-    let mut next = None;
-    let mut prev = None;
-    for action in actions.into_iter() {
-        match action.path_segment.as_str() {
-            "next-page" => next = Some(action),
-            "prev-page" => prev = Some(action),
-            _ => continue,
-        }
-    }
+    state.tx.send(ActionMsg::GetPageTurns { resp: tx }).await?;
+    let page_turns = rx.await?;
     Ok(templates::AutoTurner {
-        next,
-        prev,
+        next: page_turns.next,
+        prev: page_turns.prev,
         delay: state.config().user.auto_turner.default_delay,
     })
 }

@@ -133,14 +133,7 @@ impl ActionManager {
                 Some(ActionMsg::List { resp }) => {
                     let mut actions = Vec::new();
                     for (path_segment, opts) in self.actions.data.iter() {
-                        actions.push(ListActionResponse {
-                            name: opts.name.clone(),
-                            path_segment: path_segment.clone(),
-                            sort_value: opts.sort_value.clone(),
-                            keyboard_shortcut: opts.keyboard_shortcut,
-                            post_playback_delay: opts.post_playback_delay,
-                            voice_trigger: opts.voice_trigger.clone(),
-                        })
+                        actions.push(ActionDetails::new(path_segment, opts))
                     }
                     actions.sort_by(|a, b| a.sort_value.partial_cmp(&b.sort_value).unwrap());
                     if resp.send(actions).is_err() {
@@ -163,6 +156,17 @@ impl ActionManager {
                         warn!("Unable to send Update result. Receiver dropped")
                     }
                 }
+                Some(ActionMsg::GetPageTurns { resp }) => {
+                    let next = self.actions.data.get("next-page");
+                    let prev = self.actions.data.get("prev-page");
+                    let page_turns = PageTurnActions {
+                        next: next.map(|o| ActionDetails::new("next-page", o)),
+                        prev: prev.map(|o| ActionDetails::new("prev-page", o)),
+                    };
+                    if resp.send(page_turns).is_err() {
+                        warn!("Unable to send GetPageTurns result. Receiver dropped")
+                    }
+                }
                 None => break,
             }
         }
@@ -179,7 +183,7 @@ pub enum ActionMsg {
         resp: oneshot::Sender<Result<()>>,
     },
     List {
-        resp: oneshot::Sender<Vec<ListActionResponse>>,
+        resp: oneshot::Sender<Vec<ActionDetails>>,
     },
     Delete {
         path_segment: String,
@@ -190,6 +194,14 @@ pub enum ActionMsg {
         opts: ActionOptions,
         resp: oneshot::Sender<Result<()>>,
     },
+    GetPageTurns {
+        resp: oneshot::Sender<PageTurnActions>,
+    },
+}
+
+pub struct PageTurnActions {
+    pub prev: Option<ActionDetails>,
+    pub next: Option<ActionDetails>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -216,7 +228,7 @@ pub struct ActionOptions {
 
 #[serde_with::serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ListActionResponse {
+pub struct ActionDetails {
     pub name: String,
     pub path_segment: String,
     pub sort_value: String,
@@ -226,7 +238,17 @@ pub struct ListActionResponse {
     pub voice_trigger: Option<String>,
 }
 
-impl ListActionResponse {
+impl ActionDetails {
+    pub fn new(path_segment: &str, opts: &ActionOptions) -> Self {
+        Self {
+            name: opts.name.clone(),
+            path_segment: path_segment.to_string(),
+            sort_value: opts.sort_value.clone(),
+            keyboard_shortcut: opts.keyboard_shortcut,
+            post_playback_delay: opts.post_playback_delay,
+            voice_trigger: opts.voice_trigger.clone(),
+        }
+    }
     pub fn shortcut_name(&self) -> String {
         self.keyboard_shortcut
             .map_or("None".to_string(), |s| s.to_string())
