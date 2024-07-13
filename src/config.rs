@@ -16,6 +16,7 @@ use figment::{
 };
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationMicroSeconds, DurationMilliSeconds, DurationSeconds};
+use tracing::{debug, warn};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
@@ -277,11 +278,30 @@ async fn update_user_toml(
     State(state): State<AppState>,
     Json(edited): Json<UpdateTomlRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user: UserConfig = toml::from_str(&edited.toml)?;
+    use figment::error::Kind::*;
+    debug!("Updating user config file");
+    let fig = Figment::from(Toml::string(&edited.toml));
+    // Validate the edited config
+    let user_config = match fig.extract::<UserConfig>() {
+        Ok(u) => u,
+        Err(e) => match e.kind {
+            // Add any missing fields that have been added in new versions
+            MissingField(name) => {
+                warn!("User config is missing {name}. Using default");
+                fig.merge(Serialized::defaults(UserConfig::default()))
+                    .extract()?
+            }
+            // Otherwise return the error so it's displayed to the user
+            _ => {
+                return Err(e.into());
+            }
+        },
+    };
+    // If validation was successful, write the edited config to file and update the AppState
     let mut config = state.config();
-    fs::write(&config.user_config_path, &edited.toml)
+    fs::write(&config.user_config_path, toml::to_string(&user_config)?)
         .context("Failed to write user config file")?;
-    config.user = user;
+    config.user = user_config;
     Ok(())
 }
 
