@@ -1,6 +1,28 @@
 # Changelog
 
-## 0.2.0
+## 0.3.0 - Unreleased
+
+This release adds new features with an accessibility focus, fixes bugs, and makes more things user-configurable.
+
+### Added
+- User config and app config files
+- A rudimentary way to edit the user config from the web interface
+- A fullscreen mode for the page turner & remote control to make it harder to accidentally navigate away (disabled by default and might not work on iPhones)
+- Turn pages automatically at a set interval
+- Experimental features:
+    - Perform input anywhere on the e-reader's screen by using a phone as a trackpad or with a mouse & keyboard (might not work on all devices or in all rotations)
+    - Trigger actions with voice commands (doesn't work on mobile except for perhaps rooted Android devices)
+- `/restart` and `/exit` endpoints for restarting and stopping the server (restart is enabled and exit disabled by default - see app config)
+
+### Changed
+- Action playback endpoints will now return a JSON response.
+- Custom actions will no longer be optimized by default.
+- `/dev/input/` will be used by default instead of `/dev/input/by-path/` (changeable in user config).
+
+### Fixed
+- The KoboPageTurner Android app crashing when turning pages
+- Action recording and logging not working on the Kobo Aura H2O
+
 ## 0.2.0 - 2024-03-07
 
 This release replaces BusyBox httpd + shell scripts with a new backend written in Rust, which along with [bindings](https://github.com/sublipri/fbink-rs) for [FBInk](https://github.com/NiLuJe/FBInk) brings new features and various improvements. Due to the significant changes, you'll need to redo the initial setup after upgrading. You can upgrade in place, but you may wish to uninstall the previous version first to remove lots of no-longer needed files (they'll still be removed if you uninstall in the future).
