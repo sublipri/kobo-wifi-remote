@@ -1,7 +1,6 @@
 import { sleep, getConfig, displayMsg, closeMsg } from "/js/lib.js";
 
 const config = await getConfig();
-const wsPort = config.user.arbitrary_input.websocket_port;
 const opts = config.user.arbitrary_input.client;
 const modal = document.getElementById("arbitrary-modal");
 const touchscreenHelp = document.getElementById("touchscreen-help-text");
@@ -101,7 +100,7 @@ export async function stopInputDetection() {
 
 export async function startInputDetection(launchedWithKeyboard) {
   console.log("Starting input detection");
-  websocket = await new WebSocket(`ws://${location.host}:${wsPort}`);
+  websocket = await new WebSocket(`ws://${location.host}/ws`);
   websocket.onmessage = handleSocketMessage;
   if (launchedWithKeyboard) {
     touchscreenHelp.style.display = "none";
@@ -143,12 +142,12 @@ async function shortPress() {
 
 async function sendStart() {
   console.log("Sending input start");
-  await websocket.send(JSON.stringify({ Start: null }));
+  await websocket.send(JSON.stringify({ StartInput: null }));
 }
 
 async function sendStop() {
   console.log("Sending input stop");
-  await websocket.send(JSON.stringify({ Stop: null }));
+  await websocket.send(JSON.stringify({ StopInput: null }));
 }
 
 async function touchStart(e) {

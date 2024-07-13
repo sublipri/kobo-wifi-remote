@@ -2,17 +2,26 @@
 use super::input::{is_x_coord, is_y_coord};
 use super::{ActionEvent, ActionRecording};
 use crate::config::Config;
+use crate::server::AppState;
 use crate::util::sleep;
 
 use std::fmt::Display;
 use std::io::Write;
-use std::net::TcpListener;
+use std::ops::ControlFlow;
 use std::path::PathBuf;
-use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::Arc;
 use std::thread::spawn;
+use strum::Display;
 
 use anyhow::{anyhow, Context, Result};
+use axum::{
+    extract::ws::{WebSocket, WebSocketUpgrade},
+    extract::State,
+    response::Response,
+    routing::get,
+    Router,
+};
+
 use chrono::{DateTime, Duration, Utc};
 use evdev_rs::enums::EventType::EV_SYN;
 use fbink_rs::dump::Dump;
@@ -20,13 +29,11 @@ use fbink_rs::image::{self, DynamicImage};
 use fbink_rs::{CanonicalRotation, FbInk, FbInkRect};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationMilliSeconds};
-use tracing::{debug, error, warn};
-use tungstenite::accept;
+use tracing::{debug, error, trace, warn};
 
 #[serde_with::serde_as]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct InputOptions {
-    pub websocket_port: u16,
     pub cursor_width: u16,
     pub cursor_height: u16,
     #[serde_as(as = "DurationMilliSeconds<i64>")]
@@ -46,7 +53,6 @@ pub struct InputOptions {
 impl Default for InputOptions {
     fn default() -> Self {
         Self {
-            websocket_port: 9001,
             cursor_width: 32,
             cursor_height: 50,
             custom_cursor_path: "cursor.png".into(),
@@ -112,7 +118,7 @@ impl Default for ClientInputOptions {
     }
 }
 
-/// Manages a WebSocket and receives InputMsgs from a client. Writes ActionEvents to
+/// Receives InputMsgs from clients. Writes ActionEvents to
 /// an input device and sends CursorMsgs to the CursorManager
 pub struct InputManager {
     opts: InputOptions,
@@ -132,17 +138,32 @@ pub struct InputManager {
     cursor_y_max: f64,
     current_coord: Option<Coord>,
     cursor: DynamicImage,
-    tx: Option<Sender<CursorMsg>>,
+    tx: Option<CursorSender>,
+    rx: InputReceiver,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Display, Serialize, Deserialize)]
 pub enum InputMsg {
-    Start(Option<Coord>),
-    Stop(Option<Coord>),
+    StartInput(Option<Coord>),
+    StopInput(Option<Coord>),
     MoveAbsolute(Coord),
     MoveRelative(Coord),
     Reinit,
+    ClientConnect,
+    ClientDisconnect,
+    Shutdown,
 }
+
+#[derive(Debug)]
+pub struct InputMsgWrapper {
+    pub msg: InputMsg,
+    pub resp: tokio::sync::oneshot::Sender<Result<()>>,
+}
+
+type InputReceiver = tokio::sync::mpsc::Receiver<InputMsgWrapper>;
+pub type InputSender = tokio::sync::mpsc::Sender<InputMsgWrapper>;
+type CursorSender = std::sync::mpsc::Sender<CursorMsg>;
+type CursorReceiver = std::sync::mpsc::Receiver<CursorMsg>;
 
 /// Manages drawing a cursor on the screen with FBInk
 pub struct CursorManager {
@@ -152,10 +173,10 @@ pub struct CursorManager {
     last_draw: Option<LastDraw>,
     fbink: Arc<FbInk>,
     cursor: DynamicImage,
-    rx: Receiver<CursorMsg>,
+    rx: CursorReceiver,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Display, Serialize, Deserialize)]
 pub enum CursorMsg {
     Draw(Coord),
     Hide,
@@ -172,7 +193,12 @@ pub enum ClientMsg {
 }
 
 impl InputManager {
-    pub fn new(template: ActionRecording, fbink: Arc<FbInk>, config: &Config) -> Result<Self> {
+    pub fn new(
+        template: ActionRecording,
+        fbink: Arc<FbInk>,
+        config: Config,
+        rx: InputReceiver,
+    ) -> Result<Self> {
         if !template.is_optimized {
             return Err(anyhow!(
                 "An optimized recording is required to use as a template"
@@ -185,27 +211,9 @@ impl InputManager {
         let start_events = get_event_batch(&mut iter)?;
         let move_events = get_event_batch(&mut iter)?;
         let stop_events = get_event_batch(&mut iter)?;
-        let opts = config.user.arbitrary_input.clone();
         let current_coord = None;
-        let cursor_path = if opts.custom_cursor_path.is_relative() {
-            config.app.user_dir.join(&opts.custom_cursor_path)
-        } else {
-            opts.custom_cursor_path.clone()
-        };
-        let cursor = if cursor_path.exists() {
-            image::io::Reader::open(cursor_path)?.decode()?
-        } else {
-            image::load_from_memory(include_bytes!("../../cursor.png"))?
-        };
-        let mut cursor = cursor.resize(
-            opts.cursor_width.into(),
-            opts.cursor_height.into(),
-            image::imageops::FilterType::Nearest,
-        );
-
-        if opts.cursor_invert_color {
-            cursor.invert();
-        }
+        let cursor = Self::load_cursor(&config)?;
+        let opts = config.user.arbitrary_input;
         Ok(Self {
             opts,
             template,
@@ -225,78 +233,75 @@ impl InputManager {
             current_coord,
             cursor,
             tx: None,
+            rx,
         })
     }
 
     pub fn manage(&mut self) -> Result<()> {
-        let host = format!("0.0.0.0:{}", self.opts.websocket_port);
-        let server = TcpListener::bind(host).context("Failed to bind WebSocket server")?;
-        for stream in server.incoming() {
-            let mut websocket = accept(stream?).context("Failed to accept WebSocket stream")?;
-            debug!("New WebSocket client connected");
-            self.reinit_screen()?;
-            let (tx, rx) = mpsc::channel();
-            let mut cursor =
-                CursorManager::new(self.fbink.clone(), self.cursor.clone(), rx, &self.opts);
-            self.tx = Some(tx);
-            spawn(move || cursor.manage());
-            let start = self.get_coord(None);
-            self.send(CursorMsg::Draw(start))?;
-            loop {
-                let message = match websocket.read() {
-                    Ok(m) => m,
-                    Err(e) => {
-                        error!("Failed to read message from WebSocket. {e}");
-                        break;
-                    }
-                };
-                let msg: InputMsg = match message {
-                    tungstenite::Message::Text(text) => serde_json::from_str(&text)?,
-                    tungstenite::Message::Close(_) => {
-                        debug!("Received Close message from WebSocket client.");
-                        break;
-                    }
-                    _ => continue,
-                };
-                if let Err(e) = self.handle_msg(msg) {
-                    let string = serde_json::to_string(&ClientMsg::Error(e.to_string())).unwrap();
-                    let message = tungstenite::Message::Text(string);
-                    if let Err(e) = websocket.send(message) {
-                        error!("Failed to send error to WebSocket client. {e}");
-                    }
+        while let Some(InputMsgWrapper { msg, resp }) = self.rx.blocking_recv() {
+            let control_flow = match self.handle_msg(msg) {
+                Ok(c_f) => {
+                    if resp.send(Ok(())).is_err() {
+                        error!("InputManager failed to send Result to WebSocket handler")
+                    };
+                    c_f
                 }
+                Err(e) => {
+                    error!("{e}");
+                    if resp.send(Err(e)).is_err() {
+                        error!("InputManager failed to send Result to WebSocket handler")
+                    };
+                    ControlFlow::Break(())
+                }
+            };
+            if control_flow.is_break() {
+                break;
             }
-            self.send(CursorMsg::Hide)?;
-            self.send(CursorMsg::Stop)?;
-            self.current_coord = None;
         }
         Ok(())
     }
 
-    fn handle_msg(&mut self, msg: InputMsg) -> Result<()> {
+    fn start_cursor_manager(&mut self) -> Result<()> {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let mut cursor =
+            CursorManager::new(self.fbink.clone(), self.cursor.clone(), rx, &self.opts);
+        self.tx = Some(tx);
+        spawn(move || cursor.manage());
+        let start = self.get_coord(None);
+        self.send(CursorMsg::Draw(start))?;
+        Ok(())
+    }
+
+    fn stop_cursor_manager(&mut self) -> Result<()> {
+        self.send(CursorMsg::Hide)?;
+        self.send(CursorMsg::Stop)?;
+        self.current_coord = None;
+        self.tx = None;
+        Ok(())
+    }
+
+    fn handle_msg(&mut self, msg: InputMsg) -> Result<ControlFlow<()>> {
+        use InputMsg::*;
+        debug!("Received InputMsg::{msg}");
         match msg {
-            InputMsg::Start(coord) => {
-                debug!("Received InputMsg::Start");
-                self.input_start(coord)?
+            ClientConnect => {
+                self.reinit_screen()?;
+                if self.tx.is_none() {
+                    self.start_cursor_manager()?;
+                }
             }
-            InputMsg::Stop(coord) => {
-                debug!("Received InputMsg::Stop");
-                self.input_stop(coord)?
-            }
-            InputMsg::MoveAbsolute(coord) => {
-                debug!("Received InputMsg::MoveAbsolute");
-                self.input_move_abs(coord)?
-            }
-            InputMsg::MoveRelative(coord) => {
-                debug!("Received InputMsg::MoveRelative");
-                self.input_move_rel(coord)?
-            }
-            InputMsg::Reinit => {
-                debug!("Received InputMsg::Reinit");
-                self.reinit()?
+            StartInput(coord) => self.input_start(coord)?,
+            StopInput(coord) => self.input_stop(coord)?,
+            MoveAbsolute(coord) => self.input_move_abs(coord)?,
+            MoveRelative(coord) => self.input_move_rel(coord)?,
+            Reinit => self.reinit()?,
+            ClientDisconnect => self.stop_cursor_manager()?,
+            Shutdown => {
+                self.stop_cursor_manager()?;
+                return Ok(ControlFlow::Break(()));
             }
         }
-        Ok(())
+        Ok(ControlFlow::Continue(()))
     }
 
     fn write_events(&self, events: &[ActionEvent], change_time: bool, coord: &Coord) -> Result<()> {
@@ -387,11 +392,11 @@ impl InputManager {
         Ok(())
     }
 
-    fn send(&self, msg: CursorMsg) -> Result<(), mpsc::SendError<CursorMsg>> {
+    fn send(&self, msg: CursorMsg) -> Result<(), std::sync::mpsc::SendError<CursorMsg>> {
         if let Some(tx) = &self.tx {
             tx.send(msg)
         } else {
-            warn!("Tried to send a CursorMsg with no Sender");
+            warn!("Tried to send CursorMsg::{msg} with no Sender");
             Ok(())
         }
     }
@@ -418,6 +423,30 @@ impl InputManager {
         self.cursor_x_max = (state.screen_width - self.cursor.width()) as f64;
         self.cursor_y_max = (state.screen_height - self.cursor.height()) as f64;
         Ok(())
+    }
+
+    fn load_cursor(config: &Config) -> Result<DynamicImage> {
+        let opts = &config.user.arbitrary_input;
+        let cursor_path = if opts.custom_cursor_path.is_relative() {
+            config.app.user_dir.join(&opts.custom_cursor_path)
+        } else {
+            opts.custom_cursor_path.clone()
+        };
+        let cursor = if cursor_path.exists() {
+            image::io::Reader::open(cursor_path)?.decode()?
+        } else {
+            image::load_from_memory(include_bytes!("../../cursor.png"))?
+        };
+        let mut cursor = cursor.resize(
+            opts.cursor_width.into(),
+            opts.cursor_height.into(),
+            image::imageops::FilterType::Nearest,
+        );
+
+        if opts.cursor_invert_color {
+            cursor.invert();
+        }
+        Ok(cursor)
     }
 
     /// Translate coordinate from canonical rotation to native rotation
@@ -477,7 +506,7 @@ impl CursorManager {
     pub fn new(
         fbink: Arc<FbInk>,
         cursor: DynamicImage,
-        rx: Receiver<CursorMsg>,
+        rx: CursorReceiver,
         opts: &InputOptions,
     ) -> Self {
         Self {
@@ -545,12 +574,13 @@ impl CursorManager {
                         self.last_draw = None;
                     }
                     CursorMsg::Stop => {
+                        debug!("Stopping CursorManager");
                         return;
                     }
                 },
                 // Always draw the cursor at the last known location once the mouse/finger has
                 // stopped moving
-                Err(mpsc::RecvTimeoutError::Timeout) => {
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
                     let Some(current) = self.current_coord else {
                         continue;
                     };
@@ -566,8 +596,9 @@ impl CursorManager {
                         }
                         self.draw_cursor(&mut dump, current)
                     }
+                    sleep(self.cursor_min_refresh)
                 }
-                Err(mpsc::RecvTimeoutError::Disconnected) => {
+                Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
                     warn!("CursorManager receiver was disconnected");
                     return;
                 }
@@ -626,5 +657,54 @@ pub struct Coord {
 impl Display for Coord {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "x: {}, y: {}", self.x, self.y)
+    }
+}
+
+pub fn routes() -> Router<AppState> {
+    Router::new().route("/ws", get(handler))
+}
+
+async fn handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> Response {
+    debug!("Received request to /ws endpoint");
+    ws.on_upgrade(|socket| handle_socket(socket, state))
+}
+
+async fn handle_socket(mut socket: WebSocket, state: AppState) {
+    use axum::extract::ws::Message::*;
+    send_input_msg(&state, &mut socket, InputMsg::ClientConnect).await;
+    while let Some(Ok(msg)) = socket.recv().await {
+        match msg {
+            Text(text) => {
+                trace!("Received {text}");
+                let Ok(msg) = serde_json::from_str::<InputMsg>(&text) else {
+                    error!("Received invalid Text from WebSocket. {text}");
+                    continue;
+                };
+                send_input_msg(&state, &mut socket, msg).await;
+            }
+            Binary(_) => {
+                debug!("Received unexpected Binary message from WebSocket");
+            }
+            // Ping and Pong are handled by axum
+            Ping(_) => (),
+            Pong(_) => (),
+            Close(_) => {
+                send_input_msg(&state, &mut socket, InputMsg::ClientDisconnect).await;
+                return;
+            }
+        }
+    }
+    // client disconnected without sending Close
+    send_input_msg(&state, &mut socket, InputMsg::ClientDisconnect).await;
+}
+
+async fn send_input_msg(state: &AppState, socket: &mut WebSocket, msg: InputMsg) {
+    if let Err(e) = state.send_input_msg(msg).await {
+        error!("{e}");
+        let string = serde_json::to_string(&ClientMsg::Error(e.to_string())).unwrap();
+        let message = axum::extract::ws::Message::Text(string);
+        if let Err(e) = socket.send(message).await {
+            error!("Failed to send error to WebSocket client. {e}");
+        }
     }
 }

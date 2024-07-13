@@ -1,5 +1,8 @@
 use crate::{
-    actions::{arbitrary::InputManager, ActionManager, ActionMsg},
+    actions::{
+        arbitrary::{InputManager, InputMsg, InputMsgWrapper, InputSender},
+        ActionManager, ActionMsg,
+    },
     config::Config,
     init::init,
 };
@@ -16,23 +19,65 @@ use axum::{
     Router, ServiceExt,
 };
 use fbink_rs::{config::Font, FbInk, FbInkConfig};
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot};
 use tower::Layer;
 use tower_http::{
     normalize_path::NormalizePathLayer, set_header::response::SetResponseHeaderLayer,
 };
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 #[derive(Clone)]
 pub struct AppState {
     pub tx: mpsc::Sender<ActionMsg>,
     pub fbink: Arc<FbInk>,
     pub config: Arc<Mutex<Config>>,
+    arbitrary_tx: Arc<tokio::sync::Mutex<Option<InputSender>>>,
 }
 
 impl AppState {
     pub fn config(&self) -> MutexGuard<'_, Config> {
         self.config.lock().expect("Failed to lock Config")
+    }
+
+    pub async fn send_input_msg(&self, msg: InputMsg) -> Result<()> {
+        let arbitrary_tx = self.arbitrary_tx.lock().await;
+        let Some(ref tx) = *arbitrary_tx else {
+            warn!("Tried to send {msg} when InputManager isn't running");
+            return Ok(());
+        };
+        let (resp, rx) = oneshot::channel();
+        let msg = InputMsgWrapper { msg, resp };
+        tx.send(msg).await.unwrap();
+        rx.await?
+    }
+
+    pub async fn start_arbitrary_input(&self) -> Result<()> {
+        // Restart the InputManager if it's already running so that config changes take effect
+        // and to help minimize the impact of any bugs.
+        let _ = self.send_input_msg(InputMsg::Shutdown).await;
+        let (resp, rx) = oneshot::channel();
+        self.tx
+            .send(ActionMsg::GetRecording {
+                path_segment: "next-page".to_string(),
+                rotation: None,
+                resp,
+            })
+            .await?;
+        if let Ok(template) = rx.await? {
+            let (tx, rx) = tokio::sync::mpsc::channel(32);
+            let config = self.config().clone();
+            match InputManager::new(template.clone(), self.fbink.clone(), config, rx) {
+                Ok(mut input_manager) => {
+                    thread::spawn(move || input_manager.manage());
+                    let mut arbitrary_tx = self.arbitrary_tx.lock().await;
+                    *arbitrary_tx = Some(tx);
+                }
+                Err(e) => error!("Failed to start arbitrary input manager. {e}"),
+            };
+        } else {
+            info!("No recording to use as template. Not running arbitrary input manager.");
+        }
+        Ok(())
     }
 }
 
@@ -48,26 +93,18 @@ pub async fn serve(config: &Config) -> Result<()> {
         ..Default::default()
     })?);
     init(config, fbink.clone())?;
+    let mut manager = ActionManager::from_path(
+        config.action_file(),
+        config.recordings_file(),
+        fbink.clone(),
+        rx,
+    )?;
     let state = AppState {
         tx,
         fbink: fbink.clone(),
         config: Arc::new(Mutex::new(config.clone())),
+        arbitrary_tx: Arc::new(tokio::sync::Mutex::new(None)),
     };
-    let mut manager =
-        ActionManager::from_path(config.action_file(), config.recordings_file(), fbink, rx)?;
-    let c = &config.user;
-    if c.page_turner.enable_arbitrary_input || c.remote_control.enable_arbitrary_input {
-        if let Ok(template) = manager.recordings.get_any("next-page") {
-            match InputManager::new(template.clone(), state.fbink.clone(), config) {
-                Ok(mut input_manager) => {
-                    thread::spawn(move || input_manager.manage());
-                }
-                Err(e) => error!("Failed to start arbitrary input manager. {e}"),
-            };
-        } else {
-            info!("No recording to use as template. Not running arbitrary input manager.");
-        }
-    }
     thread::spawn(move || manager.manage());
     let app = Router::new()
         .merge(crate::config::routes())
@@ -77,6 +114,7 @@ pub async fn serve(config: &Config) -> Result<()> {
         .merge(crate::screenshot::routes())
         .merge(crate::logging::routes())
         .merge(crate::management::routes())
+        .merge(crate::actions::arbitrary::routes())
         .with_state(state);
 
     let app = NormalizePathLayer::trim_trailing_slash().layer(app);

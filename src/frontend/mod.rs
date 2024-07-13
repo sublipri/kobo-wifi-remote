@@ -75,8 +75,12 @@ async fn index(State(state): State<AppState>) -> Result<impl IntoResponse, AppEr
 }
 
 async fn remote_control(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let opts = state.config().user.remote_control.clone();
     let (tx, rx) = oneshot::channel();
     state.tx.send(ActionMsg::List { resp: tx }).await?;
+    if opts.enable_arbitrary_input {
+        state.start_arbitrary_input().await?;
+    }
     let actions = rx.await?;
     let mut shortcuts = HashMap::new();
     for a in &actions {
@@ -86,18 +90,22 @@ async fn remote_control(State(state): State<AppState>) -> Result<impl IntoRespon
     Ok(templates::RemoteControl {
         actions,
         shortcuts_json,
-        opts: state.config().user.remote_control.clone(),
+        opts,
     })
 }
 
 async fn page_turner(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let opts = state.config().user.page_turner.clone();
     let (tx, rx) = oneshot::channel();
     state.tx.send(ActionMsg::GetPageTurns { resp: tx }).await?;
+    if opts.enable_arbitrary_input {
+        state.start_arbitrary_input().await?;
+    }
     let page_turns = rx.await?;
     Ok(templates::PageTurner {
         next: page_turns.next,
         prev: page_turns.prev,
-        opts: state.config().user.page_turner.clone(),
+        opts,
     })
 }
 

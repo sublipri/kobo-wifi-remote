@@ -167,6 +167,20 @@ impl ActionManager {
                         warn!("Unable to send GetPageTurns result. Receiver dropped")
                     }
                 }
+                Some(ActionMsg::GetRecording {
+                    path_segment,
+                    rotation,
+                    resp,
+                }) => {
+                    let recording = if let Some(rota) = rotation {
+                        self.recordings.get(&path_segment, rota)
+                    } else {
+                        self.recordings.get_any(&path_segment)
+                    };
+                    if resp.send(recording.cloned()).is_err() {
+                        warn!("Unable to send GetRecording result. Receiver dropped")
+                    }
+                }
                 None => break,
             }
         }
@@ -196,6 +210,11 @@ pub enum ActionMsg {
     },
     GetPageTurns {
         resp: oneshot::Sender<PageTurnActions>,
+    },
+    GetRecording {
+        path_segment: String,
+        rotation: Option<CanonicalRotation>,
+        resp: oneshot::Sender<Result<ActionRecording>>,
     },
 }
 
