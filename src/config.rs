@@ -136,7 +136,7 @@ impl Default for PageTurnerOptions {
         Self {
             next_color: "#33b249".into(),
             prev_color: "#5783db".into(),
-            enable_arbitrary_input: true,
+            enable_arbitrary_input: false,
             prompt_fullscreen: false,
         }
     }
@@ -224,7 +224,7 @@ impl Default for RemoteOptions {
         Self {
             color1: "#5783db".into(),
             color2: "#33b249".into(),
-            enable_arbitrary_input: true,
+            enable_arbitrary_input: false,
             prompt_fullscreen: false,
         }
     }
