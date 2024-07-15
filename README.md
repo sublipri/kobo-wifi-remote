@@ -24,11 +24,11 @@ There are some screenshots in the thread on [MobileRead](https://www.mobileread.
 1. Download the [latest release](https://github.com/sublipri/kobo-wifi-remote/releases/download/v0.2.0/KoboWiFiRemote-0.2.0.zip) and extract the .zip file.
 1. Connect your e-reader to your computer with a USB cable and browse its storage.
 1. Set your computer to show hidden files.
-1. Copy the `KoboRoot.tgz` file to the hidden `.kobo` directory on your e-reader.
+1. Copy the `KoboRoot.tgz` file into the hidden `.kobo` directory on your e-reader.
 1. Safely eject your e-reader then disconnect the USB cable. Don't touch the power button.
 1. Wait for your e-reader to automatically install the package and reboot itself.
-1. Connect your e-reader to your Wi-Fi network. If using a smartphone as the remote, the phone's hotspot might work best.
-1. Once connected, the e-reader's IP address will be displayed on screen (also in `More > Settings > Device Information` if required later).
+1. Connect your e-reader to your Wi-Fi network. If using a smartphone as the remote, you can use the phone's hotspot.
+1. Once connected, the e-reader's IP address will be displayed on screen (also in `More > Settings > Device Information`).
 1. Enter the IP address in a web browser and go through the initial setup.
 
 **Warning:** installing this will enable Kobo's ForceWifiOn setting, which drains the battery quicker. You can still manually disable Wi-Fi when not using the remote if this is a concern, and ForceWifiOn can be disabled in the web interface (under Developer Settings).
