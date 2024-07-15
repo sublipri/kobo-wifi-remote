@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0 - Unreleased
+## 0.3.0 - 2024-07-15
 
 This release adds new features with an accessibility focus, fixes bugs, and makes more things user-configurable.
 
