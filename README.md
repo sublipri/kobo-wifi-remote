@@ -10,14 +10,21 @@ If the latest version doesn't work on your device, try [version 0.1.1](https://g
 
 ## Features
 
-- A simple interface designed for smartphones and users with limited dexterity.
+- Turn pages from a web browser with a simple interface designed for smartphones and users with limited dexterity.
 - Keyboard shortcuts for use with a computer.
+- Compatible with the [KoboPageTurner](https://github.com/tylpk1216/KoboPageTurner) Android app (supports some Bluetooth devices or the volume keys).
 - Custom actions (e.g. adjust the brightness).
 - A [NickelMenu](https://pgaskin.net/NickelMenu/) entry and [KOReader](https://koreader.rocks/) plugin for toggling the server.
 - Take screenshots using a web browser or NickelMenu.
 - Trigger actions with a GET request -- use with a [DIY hardware remote](https://www.mobileread.com/forums/showpost.php?p=4351236&postcount=28) or your [smart watch](https://www.mobileread.com/forums/showpost.php?p=4376646&postcount=30)
+- Turn pages automatically at a set interval.
 
-There are some screenshots in the thread on [MobileRead](https://www.mobileread.com/forums/showthread.php?t=355368).
+There are some screenshots of the web interface in the thread on [MobileRead](https://www.mobileread.com/forums/showthread.php?t=355368).
+
+### Experimental Features
+
+- Perform input anywhere on the e-reader's screen by using a phone as a trackpad or with a mouse & keyboard (see [below](#arbitrary-input-aka-trackpad-mode)).
+- Trigger actions with voice commands. This only works on desktop and perhaps rooted Android devices and requires a Chromium-based browser. See [this comment](https://github.com/sublipri/kobo-wifi-remote/issues/1#issuecomment-2044426815) and the feature's page for details.
 
 ## Installation
 
@@ -43,6 +50,18 @@ If you have shell access you can also just run `/opt/wifiremote/bin/wifiremote u
 ## Troubleshooting/Reporting Bugs
 
 Scroll to the bottom of the homepage (at your e-reader's IP address) and press Troubleshooting. There you'll find instructions for generating a log file and reporting issues.
+
+## Configuration
+
+There are two config files that live in `.adds/wifiremote/` by default. The `user-config.toml` can be edited via the `Edit Config` button on the home screen. This method is recommended as it will validate any changes. You can modify the colors of the buttons, change settings for some features, and disable or re-order the buttons on the home screen. Enabling the `propmpt_fullscreen` option helps to prevent accidentally navigating away from the page, but it probably won't work on iPhones due to browser limitations. Most settings in `app-config.toml` should not be changed by users, and must be edited manually with a text editor. Of note are `allow_remote_restart` (default: `true`) and `allow_remote_exit` (default: `false`) for enabling the `/exit` and `/restart` endpoints.
+
+## Arbitrary Input AKA Trackpad Mode
+
+This experimental feature allows you to perform input anywhere on the e-reader with a mouse and keyboard or by using a phone's touchscreen as a trackpad. It's intended for when the e-reader is mounted somewhere a user is unable to easily reach, so they can still e.g. use the dictionary. You can enable it for the page turner and remote control in their respective sections of the user config file. Then it can be started by long-pressing anywhere on the screen, or with a keyboard (default: `KeyE`). It can also be started more efficiently by swiping in the direction you want the cursor to move, but this is disabled by default since it might not work nicely on all browsers. If starting with a swipe, you'll probably want to enable `prompt_fullscreen`, and, depending on the browser, `swipe_prevent_default`.
+
+It works by drawing a cursor on the e-reader's screen using [FBInk](https://github.com/NiLuJe/FBInk). You can change how often the cursor updates with the `cursor_min_refresh`, `move_send_wait` and `final_move_send_delay` millisecond values. The defaults are fairly conservative for broad compatibility.  On some devices you could reduce them for a more responsive cursor (at the cost of higher CPU usage). Disabling `reload_background_after_input` might also improve responsiveness, but can cause visual artifacts on the screen.
+
+This feature might not work properly on all devices or in all rotations. If input is triggered in a different place to the cursor, the right combination of the `override` settings might make it work properly for a specific rotation.
 
 ## Building
 
