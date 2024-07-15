@@ -5,9 +5,10 @@ use tracing::{debug, error, warn};
 
 pub fn routes() -> Router<AppState> {
     Router::new()
+        // TODO: add routes to restart/shutdown the device (default to disabled)
         .route("/restart", get(restart_handler))
         // Use /exit for compatibility with KoboPageTurner
-        .route("/exit", get(shutdown_handler))
+        .route("/exit", get(exit_handler))
 }
 
 async fn restart_handler(State(state): State<AppState>) -> impl IntoResponse {
@@ -23,16 +24,16 @@ async fn restart_handler(State(state): State<AppState>) -> impl IntoResponse {
     }
 }
 
-async fn shutdown_handler(State(state): State<AppState>) -> impl IntoResponse {
-    if state.config().app.allow_remote_shutdown {
-        debug!("Received request to shutdown server");
+async fn exit_handler(State(state): State<AppState>) -> impl IntoResponse {
+    if state.config().app.allow_remote_exit {
+        debug!("Received request to exit server");
         run_command("stop");
-        (StatusCode::OK, "Shutdown successful")
+        (StatusCode::OK, "Exit successful")
     } else {
-        warn!("Remote shutdown attempted but disabled in AppConfig");
+        warn!("Remote exit attempted but disabled in AppConfig");
         (
             StatusCode::FORBIDDEN,
-            "Remote shutdown disabled in AppConfig",
+            "Remote exit disabled in AppConfig",
         )
     }
 }

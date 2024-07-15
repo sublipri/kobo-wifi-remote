@@ -33,7 +33,7 @@ pub struct AppConfig {
     pub user_dir: PathBuf,
     pub port: u32,
     pub allow_remote_restart: bool,
-    pub allow_remote_shutdown: bool,
+    pub allow_remote_exit: bool,
 }
 
 impl Default for AppConfig {
@@ -44,7 +44,7 @@ impl Default for AppConfig {
             user_dir: "/mnt/onboard/.adds/wifiremote".into(),
             port: 80,
             allow_remote_restart: true,
-            allow_remote_shutdown: false,
+            allow_remote_exit: false,
         }
     }
 }
