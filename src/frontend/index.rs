@@ -43,8 +43,8 @@ impl Default for IndexOptions {
     fn default() -> Self {
         Self {
             button_height: 20.0,
-            color1: "#5783db".into(),
-            color2: "#33b249".into(),
+            color1: "#33b249".into(),
+            color2: "#5783db".into(),
             setup: opts("Initial Setup", 10, true),
             page_turner: opts("Page Turner", 20, true),
             custom_actions: opts("Custom Actions", 30, true),
