@@ -26,6 +26,10 @@ There are some screenshots of the web interface in the thread on [MobileRead](ht
 - Perform input anywhere on the e-reader's screen by using a phone as a trackpad or with a mouse & keyboard (see [below](#arbitrary-input-aka-trackpad-mode)).
 - Trigger actions with voice commands. This only works on desktop and perhaps rooted Android devices and requires a Chromium-based browser. See [this comment](https://github.com/sublipri/kobo-wifi-remote/issues/1#issuecomment-2044426815) and the feature's page for details.
 
+## Demo Video
+
+https://github.com/user-attachments/assets/8ea282af-c377-4ee3-9978-bcb42a530bb3
+
 ## Installation
 
 1. Download the [latest release](https://github.com/sublipri/kobo-wifi-remote/releases/download/v0.3.0/KoboWiFiRemote-0.3.0.zip) and extract the `.zip` file.
