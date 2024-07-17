@@ -11,7 +11,8 @@ use anyhow::{anyhow, Context, Result};
 use chrono::Local;
 use clap::{Parser, Subcommand};
 use fbink_rs::config::Font;
-use fbink_rs::{FbInk, FbInkConfig, ImageOutputFormat};
+use fbink_rs::{FbInk, FbInkConfig};
+use fbink_rs::image::ImageFormat;
 use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
 use serde::{Deserialize, Serialize};
@@ -377,7 +378,7 @@ fn screenshot(config: &Config, delay: u64, use_fbink: bool) -> Result<()> {
     if delay > 0 {
         sleep(Duration::from_secs(delay));
     }
-    let bytes = fbink.screenshot(ImageOutputFormat::Png)?;
+    let bytes = fbink.screenshot(ImageFormat::Png)?;
     let timestamp = Local::now().format("%Y%m%d-%H%M-%S");
     let filename = format!("{}-{timestamp}.png", slugify(fbink.state().device_id));
     let out_dir = config.app.user_dir.join("screenshots");
