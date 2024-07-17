@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.1 - 2024-07-18
+This release fixes a minor bug and updates FBInk so the latest Kobo models might work.
+
+### Changed
+- Updated dependencies
+
+### Fixed
+- The configured auto turner default delay not being used
+
 ## 0.3.0 - 2024-07-15
 
 This release adds new features with an accessibility focus, fixes bugs, and makes more things user-configurable.

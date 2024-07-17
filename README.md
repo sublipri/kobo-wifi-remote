@@ -1,10 +1,10 @@
-# Kobo Wi-Fi Remote 0.3.0
+# Kobo Wi-Fi Remote 0.3.1
 
 Kobo Wi-Fi Remote is a remote control/page turner for Kobo e-readers. It installs a server on your device that can record and replay touchscreen inputs via a web interface. It is **not** safe to use on public Wi-Fi networks.
 
 ## Supported Devices
 
-It should work on any Kobo e-reader released between 2011 and 2023, but is only actively tested on a Glo and Sage with recent firmware.
+It should work on any Kobo e-reader released between 2011 and July 2024, but is only actively tested on a Glo and Sage with recent firmware.
 
 If the latest version doesn't work on your device, try [version 0.1.1](https://github.com/sublipri/kobo-wifi-remote/releases/tag/v0.1.1). That's more generic in how it functions, but is slower and has fewer features.
 
@@ -32,7 +32,7 @@ https://github.com/user-attachments/assets/8ea282af-c377-4ee3-9978-bcb42a530bb3
 
 ## Installation
 
-1. Download the [latest release](https://github.com/sublipri/kobo-wifi-remote/releases/download/v0.3.0/KoboWiFiRemote-0.3.0.zip) and extract the `.zip` file.
+1. Download the [latest release](https://github.com/sublipri/kobo-wifi-remote/releases/download/v0.3.1/KoboWiFiRemote-0.3.1.zip) and extract the `.zip` file.
 1. Connect your e-reader to your computer with a USB cable and browse its storage.
 1. Set your computer to show hidden files.
 1. Copy the `KoboRoot.tgz` file into the hidden `.kobo` directory on your e-reader.
@@ -57,7 +57,7 @@ Scroll to the bottom of the homepage (at your e-reader's IP address) and press T
 
 ## Configuration
 
-There are two config files that live in `.adds/wifiremote/` by default. The `user-config.toml` can be edited via the `Edit Config` button on the home screen. This method is recommended as it will validate any changes. You can modify the colors of the buttons, change settings for some features, and disable or re-order the buttons on the home screen. Enabling the `propmpt_fullscreen` option helps to prevent accidentally navigating away from the page, but it probably won't work on iPhones due to browser limitations. Most settings in `app-config.toml` should not be changed by users, and must be edited manually with a text editor. Of note are `allow_remote_restart` (default: `true`) and `allow_remote_exit` (default: `false`) for enabling the `/exit` and `/restart` endpoints.
+There are two config files that live in `.adds/wifiremote/` by default. The `user-config.toml` can be edited via the `Edit Config` button on the home screen. This method is recommended as it will validate any changes. You can modify the colors of the buttons, change settings for some features, and disable or re-order the buttons on the home screen. Enabling the `prompt_fullscreen` option helps to prevent accidentally navigating away from the page, but it probably won't work on iPhones due to browser limitations. Most settings in `app-config.toml` should not be changed by users, and must be edited manually with a text editor. Of note are `allow_remote_restart` (default: `true`) and `allow_remote_exit` (default: `false`) for enabling the `/exit` and `/restart` endpoints.
 
 ## Arbitrary Input AKA Trackpad Mode
 
