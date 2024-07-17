@@ -33,7 +33,7 @@ async fn get_log() -> Result<impl IntoResponse, AppError> {
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
     let to_write = stdout
         .lines()
-        .flatten()
+        .map_while(Result::ok)
         .filter(|l| l.contains("wifiremote") || l.contains("FBInk"));
 
     for line in to_write {

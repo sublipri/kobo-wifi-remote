@@ -31,10 +31,7 @@ async fn exit_handler(State(state): State<AppState>) -> impl IntoResponse {
         (StatusCode::OK, "Exit successful")
     } else {
         warn!("Remote exit attempted but disabled in AppConfig");
-        (
-            StatusCode::FORBIDDEN,
-            "Remote exit disabled in AppConfig",
-        )
+        (StatusCode::FORBIDDEN, "Remote exit disabled in AppConfig")
     }
 }
 

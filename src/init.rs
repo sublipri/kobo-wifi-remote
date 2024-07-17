@@ -31,12 +31,18 @@ pub fn merge_files(old_files: PathBuf, new_files: PathBuf) -> Result<()> {
         let (old, new) = (old_files.display(), new_files.display());
         debug!("Merging {new} with {old}");
         let mut existing = HashSet::new();
-        for line in BufReader::new(File::open(&old_files)?).lines().flatten() {
+        for line in BufReader::new(File::open(&old_files)?)
+            .lines()
+            .map_while(Result::ok)
+        {
             existing.insert(line);
         }
         let file = File::options().append(true).open(&old_files)?;
         let mut file = LineWriter::new(file);
-        for line in BufReader::new(File::open(&new_files)?).lines().flatten() {
+        for line in BufReader::new(File::open(&new_files)?)
+            .lines()
+            .map_while(Result::ok)
+        {
             if !existing.contains(&line) {
                 file.write_all(&line.into_bytes())?;
             }
