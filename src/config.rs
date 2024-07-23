@@ -1,5 +1,6 @@
 use crate::actions::arbitrary::InputOptions;
 use crate::frontend::index::IndexOptions;
+use crate::init::set_sunxi_rota;
 use crate::{errors::AppError, server::AppState};
 
 use std::fs;
@@ -10,6 +11,7 @@ use axum::routing::post;
 use axum::Json;
 use axum::{extract::State, response::IntoResponse, routing::get, Router};
 use chrono::Duration;
+use fbink_rs::state::SunxiForceRotation;
 use figment::{
     providers::{Env, Format, Serialized, Toml},
     Figment,
@@ -61,6 +63,7 @@ impl AppConfig {
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct UserConfig {
+    pub rotation: RotationOptions,
     pub page_turner: PageTurnerOptions,
     pub remote_control: RemoteOptions,
     pub auto_turner: AutoTurnerOptions,
@@ -120,6 +123,19 @@ impl Config {
     }
     pub fn is_dev_mode() -> bool {
         std::env::var("WIFIREMOTE_DEV_MODE").is_ok_and(|v| v == "1")
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct RotationOptions {
+    pub sunxi_detection: SunxiForceRotation,
+}
+
+impl Default for RotationOptions {
+    fn default() -> Self {
+        Self {
+            sunxi_detection: SunxiForceRotation::Gyro,
+        }
     }
 }
 
@@ -282,7 +298,7 @@ async fn update_user_toml(
     debug!("Updating user config file");
     let fig = Figment::from(Toml::string(&edited.toml));
     // Validate the edited config
-    let user_config = match fig.extract::<UserConfig>() {
+    let new_config = match fig.extract::<UserConfig>() {
         Ok(u) => u,
         Err(e) => match e.kind {
             // Add any missing fields that have been added in new versions
@@ -299,9 +315,12 @@ async fn update_user_toml(
     };
     // If validation was successful, write the edited config to file and update the AppState
     let mut config = state.config();
-    fs::write(&config.user_config_path, toml::to_string(&user_config)?)
+    if config.user.rotation.sunxi_detection != new_config.rotation.sunxi_detection {
+        set_sunxi_rota(&new_config.rotation, state.fbink.as_ref())?
+    }
+    fs::write(&config.user_config_path, toml::to_string(&new_config)?)
         .context("Failed to write user config file")?;
-    config.user = user_config;
+    config.user = new_config;
     Ok(())
 }
 

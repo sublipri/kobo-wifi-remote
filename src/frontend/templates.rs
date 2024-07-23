@@ -20,6 +20,8 @@ pub struct Index<'a> {
 #[template(path = "setup.html")]
 pub struct Setup {
     pub opts: SetupOptions,
+    pub is_sunxi: bool,
+    pub device_name: String,
 }
 
 #[derive(Template)]

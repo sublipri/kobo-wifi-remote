@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+- A way to configure how rotation is detected on sunxi devices (Sage & Elipsa).
+
 ### Fixed
 - Landscape rotation detection on the Glo (existing landscape recordings on the Glo will need re-doing)
 

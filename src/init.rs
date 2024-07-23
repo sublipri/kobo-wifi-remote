@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::config::{Config, RotationOptions};
 use crate::kobo_config::KoboConfigFile;
 
 use std::{
@@ -13,15 +13,34 @@ use std::{
 };
 
 use anyhow::{anyhow, Context, Result};
-use fbink_rs::FbInk;
-use tracing::{debug, trace};
+use fbink_rs::{state::SunxiForceRotation, FbInk};
+use tracing::{debug, error, trace, warn};
 
 pub fn init(config: &Config, fbink: Arc<FbInk>) -> Result<()> {
+    set_sunxi_rota(&config.user.rotation, fbink.as_ref())?;
     merge_files(config.file_list(), config.file_list().with_extension("new"))?;
     merge_files(config.dir_list(), config.dir_list().with_extension("new"))?;
 
     if !config.action_file().exists() && !Config::is_dev_mode() {
         first_run(config, fbink)?;
+    }
+    Ok(())
+}
+
+pub fn set_sunxi_rota(opts: &RotationOptions, fbink: &FbInk) -> Result<()> {
+    let state = fbink.state();
+    if state.is_sunxi && std::env::var("FBINK_FORCE_ROTA").is_err() {
+        let mut force_rota = opts.sunxi_detection;
+        // TODO: provide a user-friendly way to download fbdamage and patch on-animator.sh ala
+        // NanoClock
+        if force_rota == SunxiForceRotation::Workbuf && !state.sunxi_has_fbdamage {
+            warn!("sunxi_detection_method set to Workbuf but fbdamage isn't loaded. Using Gyro");
+            force_rota = SunxiForceRotation::Gyro;
+        }
+        debug!("Setting sunxi_force_rota to {force_rota}");
+        if let Err(e) = fbink.sunxi_ntx_enforce_rota(force_rota) {
+            error!("Failed to set sunxi_force_rota. {e}");
+        }
     }
     Ok(())
 }
