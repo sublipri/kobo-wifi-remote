@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Landscape rotation detection on the Glo (existing landscape recordings on the Glo will need re-doing)
+
 ## 0.3.1 - 2024-07-18
 This release fixes a minor bug and updates FBInk so the latest Kobo models might work.
 

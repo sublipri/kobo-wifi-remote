@@ -614,7 +614,7 @@ dependencies = [
 [[package]]
 name = "fbink-rs"
 version = "0.1.0"
-source = "git+https://github.com/sublipri/fbink-rs?rev=e6d428997ae1542f3ca5ffd61ccfa664ca2df6a4#e6d428997ae1542f3ca5ffd61ccfa664ca2df6a4"
+source = "git+https://github.com/sublipri/fbink-rs?rev=9339be999a923d207a10f8e8255efe3d989ed596#9339be999a923d207a10f8e8255efe3d989ed596"
 dependencies = [
  "fbink-sys",
  "flagset",
@@ -631,7 +631,7 @@ dependencies = [
 [[package]]
 name = "fbink-sys"
 version = "0.1.0"
-source = "git+https://github.com/sublipri/fbink-rs?rev=e6d428997ae1542f3ca5ffd61ccfa664ca2df6a4#e6d428997ae1542f3ca5ffd61ccfa664ca2df6a4"
+source = "git+https://github.com/sublipri/fbink-rs?rev=9339be999a923d207a10f8e8255efe3d989ed596#9339be999a923d207a10f8e8255efe3d989ed596"
 dependencies = [
  "bindgen",
 ]

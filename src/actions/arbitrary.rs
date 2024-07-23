@@ -452,9 +452,9 @@ impl InputManager {
     /// Translate coordinate from canonical rotation to native rotation
     fn translate_coord(&self, coord: &mut Coord) {
         // Adapted from FBInk https://github.com/NiLuJe/FBInk/blob/master/utils/finger_trace.c
-        // I'm not really sure if this is correct for our needs which are somewhat different.
-        // Translation works on a Sage in all rotations and a Glo in upright rotation,
-        // but is wrong on a Glo that's been forced into Landscape rotation.
+        // Note that we swap the axes at the end rather than at the start.  I assume this is
+        // required due to translating canonical -> native not native -> canonical, but I'm bad at
+        // maths and don't really understand why this works (tested on a Glo and Sage).
         debug!("Input coordinates: {coord}");
         let mut swap_axes = self.swap_axes;
         let mut mirror_x = self.mirror_x;
