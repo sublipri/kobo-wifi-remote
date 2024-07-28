@@ -23,7 +23,8 @@ use axum::{
 };
 
 use chrono::{DateTime, Duration, Utc};
-use evdev_rs::enums::EventType::EV_SYN;
+use evdev_rs::enums::EventCode::EV_SYN;
+use evdev_rs::enums::EV_SYN::SYN_REPORT;
 use fbink_rs::dump::Dump;
 use fbink_rs::image::{self, DynamicImage};
 use fbink_rs::{CanonicalRotation, FbInk, FbInkRect};
@@ -637,11 +638,17 @@ impl CursorManager {
 fn get_event_batch<'a>(
     iter: &mut impl Iterator<Item = &'a ActionEvent>,
 ) -> Result<Vec<ActionEvent>> {
+    debug!("Getting event batch");
     let mut events = Vec::new();
     for action_event in iter.by_ref() {
         events.push(action_event.clone());
         let ie = action_event.input_event()?;
-        if ie.is_type(&EV_SYN) {
+        debug!(
+            "{}.{} {} {}",
+            ie.time.tv_sec, ie.time.tv_usec, ie.event_code, ie.value
+        );
+        if ie.is_code(&EV_SYN(SYN_REPORT)) {
+            debug!("Finished event batch");
             break;
         }
     }
