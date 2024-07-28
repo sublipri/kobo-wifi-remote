@@ -292,20 +292,20 @@ struct UpdateTomlRequest {
 
 async fn update_user_toml(
     State(state): State<AppState>,
-    Json(edited): Json<UpdateTomlRequest>,
+    Json(request): Json<UpdateTomlRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     use figment::error::Kind::*;
     debug!("Updating user config file");
-    let fig = Figment::from(Toml::string(&edited.toml));
+    let edited = Figment::from(Toml::string(&request.toml));
     // Validate the edited config
-    let new_config = match fig.extract::<UserConfig>() {
+    let new_config = match edited.extract::<UserConfig>() {
         Ok(u) => u,
         Err(e) => match e.kind {
             // Add any missing fields that have been added in new versions
             MissingField(name) => {
                 warn!("User config is missing {name}. Using default");
-                fig.merge(Serialized::defaults(UserConfig::default()))
-                    .extract()?
+                let defaults = Serialized::defaults(UserConfig::default());
+                edited.join(defaults).extract()?
             }
             // Otherwise return the error so it's displayed to the user
             _ => {

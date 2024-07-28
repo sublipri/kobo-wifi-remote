@@ -7,6 +7,7 @@
 
 ### Fixed
 - Landscape rotation detection on the Glo (existing landscape recordings on the Glo will need re-doing)
+- The user config being overwritten if it has fields missing when edited from the web interface
 
 ## 0.3.1 - 2024-07-18
 This release fixes a minor bug and updates FBInk so the latest Kobo models might work.
