@@ -53,7 +53,7 @@ If you have shell access you can also just run `/opt/wifiremote/bin/wifiremote u
 
 ## Troubleshooting/Reporting Bugs
 
-Scroll to the bottom of the homepage (at your e-reader's IP address) and press Troubleshooting. There you'll find instructions for generating a log file and reporting issues.
+You can download a log file via the web interface by following the steps on the Troubleshooting page. If the web interface is inaccessible, there are two lines in the NickelMenu config at `.adds/nm/wifiremote` that can be uncommented to allow saving logs using NickelMenu.
 
 ## Configuration
 

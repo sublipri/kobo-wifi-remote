@@ -54,6 +54,9 @@ menu_item :reader :Screenshot (2s delay) :cmd_spawn :quiet:"$MAIN_BIN" screensho
 # menu_item :main :Wi-Fi Remote (disable) :cmd_output :1000:"$MAIN_BIN" disable --now
 # menu_item :main :Wi-Fi Remote (status) :cmd_output :1000:"$MAIN_BIN" status
 # menu_item :main :Wi-Fi Remote (restart) :cmd_output :1000:"$MAIN_BIN" restart
+# The following can be used to save debug logs if the web interface fails to load
+# menu_item :main :Wi-Fi Remote (save debug log) :cmd_spawn :quiet:"$MAIN_BIN" stop; RUST_LOG=trace "$MAIN_BIN" serve >"$USER_DIR"/wifiremote.log 2>&1
+# menu_item :main :Save Syslog :cmd_spawn :quiet: logread >"$USER_DIR"/syslog.log
 EOF
 
 # create list of files and directories to remove when uninstalling
