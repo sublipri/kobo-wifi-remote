@@ -316,7 +316,7 @@ async fn update_user_toml(
     // If validation was successful, write the edited config to file and update the AppState
     let mut config = state.config();
     if config.user.rotation.sunxi_detection != new_config.rotation.sunxi_detection {
-        set_sunxi_rota(&new_config.rotation, state.fbink.as_ref())?
+        set_sunxi_rota(&new_config.rotation, state.fbink.as_ref())
     }
     fs::write(&config.user_config_path, toml::to_string(&new_config)?)
         .context("Failed to write user config file")?;

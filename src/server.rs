@@ -91,14 +91,14 @@ pub async fn serve(config: &Config) -> Result<()> {
         font: Font::Fatty,
         to_syslog: true,
         ..Default::default()
-    })?);
+    }).context("Failed to initialize FBInk")?);
     init(config, fbink.clone())?;
     let mut manager = ActionManager::from_path(
         config.action_file(),
         config.recordings_file(),
         fbink.clone(),
         rx,
-    )?;
+    ).context("Failed to start ActionManager")?;
     let state = AppState {
         tx,
         fbink: fbink.clone(),

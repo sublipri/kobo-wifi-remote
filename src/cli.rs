@@ -17,7 +17,7 @@ use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
 use serde::{Deserialize, Serialize};
 use slug::slugify;
-use tracing::{error, info, warn};
+use tracing::{error, info, warn, trace};
 
 #[derive(Parser, Debug, Deserialize, Serialize)]
 #[command(version, about, long_about = None, arg_required_else_help = true)]
@@ -147,9 +147,10 @@ pub fn load_config(args: &Cli) -> Result<Config> {
 }
 
 pub fn cli() -> Result<()> {
+    trace!("Starting to parse CLI");
     let args = Cli::parse();
 
-    let config = load_config(&args)?;
+    let config = load_config(&args).context("Failed to load config")?;
 
     let Some(subcommand) = &args.command else {
         return Ok(());

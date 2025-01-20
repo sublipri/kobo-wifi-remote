@@ -17,9 +17,11 @@ use fbink_rs::{state::SunxiForceRotation, FbInk};
 use tracing::{debug, error, trace, warn};
 
 pub fn init(config: &Config, fbink: Arc<FbInk>) -> Result<()> {
-    set_sunxi_rota(&config.user.rotation, fbink.as_ref())?;
-    merge_files(config.file_list(), config.file_list().with_extension("new"))?;
-    merge_files(config.dir_list(), config.dir_list().with_extension("new"))?;
+    set_sunxi_rota(&config.user.rotation, fbink.as_ref());
+    merge_files(config.file_list(), config.file_list().with_extension("new"))
+        .context("Failed to merge file list")?;
+    merge_files(config.dir_list(), config.dir_list().with_extension("new"))
+        .context("Failed to merge dir list")?;
 
     if !config.action_file().exists() && !Config::is_dev_mode() {
         first_run(config, fbink)?;
@@ -27,7 +29,23 @@ pub fn init(config: &Config, fbink: Arc<FbInk>) -> Result<()> {
     Ok(())
 }
 
-pub fn set_sunxi_rota(opts: &RotationOptions, fbink: &FbInk) -> Result<()> {
+fn first_run(config: &Config, fbink: Arc<FbInk>) -> Result<()> {
+    if let Err(e) = set_force_wifi_on() {
+        error!("Failed to set ForceWifiOn=true. {e}");
+    }
+    if let Err(e) = install_koreader_plugin() {
+        error!("Failed to install KOReader plugin. {e}");
+    }
+    let port = config.app.port;
+    thread::spawn(move || {
+        if let Err(e) = display_ip_address(port, fbink) {
+            error!("Failed to display IP Address. {e}")
+        }
+    });
+    Ok(())
+}
+
+pub fn set_sunxi_rota(opts: &RotationOptions, fbink: &FbInk) {
     let state = fbink.state();
     if state.is_sunxi && std::env::var("FBINK_FORCE_ROTA").is_err() {
         let mut force_rota = opts.sunxi_detection;
@@ -42,10 +60,9 @@ pub fn set_sunxi_rota(opts: &RotationOptions, fbink: &FbInk) -> Result<()> {
             error!("Failed to set sunxi_force_rota. {e}");
         }
     }
-    Ok(())
 }
 
-pub fn merge_files(old_files: PathBuf, new_files: PathBuf) -> Result<()> {
+fn merge_files(old_files: PathBuf, new_files: PathBuf) -> Result<()> {
     if old_files.exists() && new_files.exists() {
         let (old, new) = (old_files.display(), new_files.display());
         debug!("Merging {new} with {old}");
@@ -75,12 +92,15 @@ pub fn merge_files(old_files: PathBuf, new_files: PathBuf) -> Result<()> {
     Ok(())
 }
 
-pub fn first_run(config: &Config, fbink: Arc<FbInk>) -> Result<()> {
+fn set_force_wifi_on() -> Result<()> {
     let mut kobo_config = KoboConfigFile::open(Default::default())?;
     if kobo_config.set_value("DeveloperSettings", "ForceWifiOn", Some("true"))? {
         kobo_config.write()?;
     }
+    Ok(())
+}
 
+fn install_koreader_plugin() -> Result<()> {
     let koreader_path = PathBuf::from("/mnt/onboard/.adds/koreader/plugins");
     if koreader_path.exists() {
         let wfr_path = koreader_path.join("wifiremote.koplugin");
@@ -96,12 +116,10 @@ pub fn first_run(config: &Config, fbink: Arc<FbInk>) -> Result<()> {
                 .with_context(|| format!("Failed to write {}", &meta.display()))?;
         }
     }
-    let port = config.app.port;
-    thread::spawn(move || display_ip_address(port, fbink));
     Ok(())
 }
 
-pub fn display_ip_address(port: u32, fbink: Arc<FbInk>) -> Result<()> {
+fn display_ip_address(port: u32, fbink: Arc<FbInk>) -> Result<()> {
     let mut msg = format!("\nWi-Fi Remote {} initialized.\n\n ", Config::version());
     msg.push_str("Visit this address to setup your device:\n\n");
     let mut addr = wait_for_ip_address()?;
@@ -110,11 +128,11 @@ pub fn display_ip_address(port: u32, fbink: Arc<FbInk>) -> Result<()> {
     }
     msg.push_str(&format!("http://{addr}\n "));
     sleep(Duration::from_millis(2000));
-    fbink.print(&msg)?;
+    fbink.print(&msg).context("Failed to display IP address")?;
     Ok(())
 }
 
-pub fn wait_for_ip_address() -> Result<String> {
+fn wait_for_ip_address() -> Result<String> {
     debug!("Waiting for IP Address");
     let max_attempts = 600;
     let retry_after = Duration::from_millis(1000);
