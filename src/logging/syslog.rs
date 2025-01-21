@@ -77,7 +77,7 @@ pub struct StringVisitor<'a> {
     string: &'a mut String,
 }
 
-impl<'a> Visit for StringVisitor<'a> {
+impl Visit for StringVisitor<'_> {
     fn record_debug(&mut self, _: &Field, value: &dyn std::fmt::Debug) {
         write!(self.string, "{:?}", value).unwrap();
     }

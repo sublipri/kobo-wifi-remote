@@ -38,7 +38,7 @@ async fn get_log() -> Result<impl IntoResponse, AppError> {
 
     for line in to_write {
         encoder.write_all(line.as_bytes())?;
-        encoder.write_all(&[b'\n'])?;
+        encoder.write_all(b"\n")?;
     }
     let bytes = encoder.finish()?;
     let timestamp = Local::now().format("%s");
