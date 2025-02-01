@@ -1,4 +1,5 @@
-use crate::config::{Config, RotationOptions};
+use crate::config::{Config, FbInkOptions};
+use crate::fbink::FbInkWrapper;
 use crate::kobo_config::KoboConfigFile;
 
 use std::{
@@ -16,20 +17,23 @@ use anyhow::{anyhow, Context, Result};
 use fbink_rs::{state::SunxiForceRotation, FbInk};
 use tracing::{debug, error, trace, warn};
 
-pub fn init(config: &Config, fbink: Arc<FbInk>) -> Result<()> {
-    set_sunxi_rota(&config.user.rotation, fbink.as_ref());
+pub fn init(config: &Config, fbink: FbInkWrapper) -> Result<()> {
+    let fbink = fbink.try_inner();
+    if let Ok(fbink) = fbink {
+        set_sunxi_rota(&config.user.fbink, fbink);
+    }
     merge_files(config.file_list(), config.file_list().with_extension("new"))
         .context("Failed to merge file list")?;
     merge_files(config.dir_list(), config.dir_list().with_extension("new"))
         .context("Failed to merge dir list")?;
 
     if !config.action_file().exists() && !Config::is_dev_mode() {
-        first_run(config, fbink)?;
+        first_run(config, fbink.cloned());
     }
     Ok(())
 }
 
-fn first_run(config: &Config, fbink: Arc<FbInk>) -> Result<()> {
+fn first_run(config: &Config, fbink: Result<Arc<FbInk>>) {
     if let Err(e) = set_force_wifi_on() {
         error!("Failed to set ForceWifiOn=true. {e}");
     }
@@ -37,22 +41,22 @@ fn first_run(config: &Config, fbink: Arc<FbInk>) -> Result<()> {
         error!("Failed to install KOReader plugin. {e}");
     }
     let port = config.app.port;
+    let Ok(fbink) = fbink else { return };
     thread::spawn(move || {
         if let Err(e) = display_ip_address(port, fbink) {
             error!("Failed to display IP Address. {e}")
         }
     });
-    Ok(())
 }
 
-pub fn set_sunxi_rota(opts: &RotationOptions, fbink: &FbInk) {
+pub fn set_sunxi_rota(opts: &FbInkOptions, fbink: &FbInk) {
     let state = fbink.state();
     if state.is_sunxi && std::env::var("FBINK_FORCE_ROTA").is_err() {
-        let mut force_rota = opts.sunxi_detection;
+        let mut force_rota = opts.sunxi_force_rota;
         // TODO: provide a user-friendly way to download fbdamage and patch on-animator.sh ala
         // NanoClock
         if force_rota == SunxiForceRotation::Workbuf && !state.sunxi_has_fbdamage {
-            warn!("sunxi_detection_method set to Workbuf but fbdamage isn't loaded. Using Gyro");
+            warn!("sunxi_force_rota set to Workbuf but fbdamage isn't loaded. Using Gyro");
             force_rota = SunxiForceRotation::Gyro;
         }
         debug!("Setting sunxi_force_rota to {force_rota}");

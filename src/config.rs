@@ -63,9 +63,9 @@ impl AppConfig {
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct UserConfig {
-    pub rotation: RotationOptions,
     pub page_turner: PageTurnerOptions,
     pub remote_control: RemoteOptions,
+    pub fbink: FbInkOptions,
     pub auto_turner: AutoTurnerOptions,
     pub voice_activation: VoiceActivationOptions,
     pub setup: SetupOptions,
@@ -127,14 +127,16 @@ impl Config {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct RotationOptions {
-    pub sunxi_detection: SunxiForceRotation,
+pub struct FbInkOptions {
+    pub enabled: bool,
+    pub sunxi_force_rota: SunxiForceRotation,
 }
 
-impl Default for RotationOptions {
+impl Default for FbInkOptions {
     fn default() -> Self {
         Self {
-            sunxi_detection: SunxiForceRotation::Gyro,
+            enabled: true,
+            sunxi_force_rota: SunxiForceRotation::Gyro,
         }
     }
 }
@@ -315,8 +317,10 @@ async fn update_user_toml(
     };
     // If validation was successful, write the edited config to file and update the AppState
     let mut config = state.config();
-    if config.user.rotation.sunxi_detection != new_config.rotation.sunxi_detection {
-        set_sunxi_rota(&new_config.rotation, state.fbink.as_ref())
+    if config.user.fbink.sunxi_force_rota != new_config.fbink.sunxi_force_rota {
+        if let Ok(fbink) = state.fbink.try_inner() {
+            set_sunxi_rota(&new_config.fbink, fbink)
+        }
     }
     fs::write(&config.user_config_path, toml::to_string(&new_config)?)
         .context("Failed to write user config file")?;

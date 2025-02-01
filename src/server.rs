@@ -4,6 +4,7 @@ use crate::{
         ActionManager, ActionMsg,
     },
     config::Config,
+    fbink::FbInkWrapper,
     init::init,
 };
 
@@ -18,7 +19,6 @@ use axum::{
     http::{header, HeaderValue},
     Router, ServiceExt,
 };
-use fbink_rs::{config::Font, FbInk, FbInkConfig};
 use tokio::sync::{mpsc, oneshot};
 use tower::Layer;
 use tower_http::{
@@ -29,7 +29,7 @@ use tracing::{error, info, warn};
 #[derive(Clone)]
 pub struct AppState {
     pub tx: mpsc::Sender<ActionMsg>,
-    pub fbink: Arc<FbInk>,
+    pub fbink: FbInkWrapper,
     pub config: Arc<Mutex<Config>>,
     arbitrary_tx: Arc<tokio::sync::Mutex<Option<InputSender>>>,
 }
@@ -54,6 +54,7 @@ impl AppState {
     pub async fn start_arbitrary_input(&self) -> Result<()> {
         // Restart the InputManager if it's already running so that config changes take effect
         // and to help minimize the impact of any bugs.
+        let fbink = self.fbink.try_inner()?.clone();
         let _ = self.send_input_msg(InputMsg::Shutdown).await;
         let (resp, rx) = oneshot::channel();
         self.tx
@@ -66,7 +67,7 @@ impl AppState {
         if let Ok(template) = rx.await? {
             let (tx, rx) = tokio::sync::mpsc::channel(32);
             let config = self.config().clone();
-            match InputManager::new(template.clone(), self.fbink.clone(), config, rx) {
+            match InputManager::new(template.clone(), fbink, config, rx) {
                 Ok(mut input_manager) => {
                     thread::spawn(move || input_manager.manage());
                     let mut arbitrary_tx = self.arbitrary_tx.lock().await;
@@ -84,21 +85,15 @@ impl AppState {
 #[tokio::main(flavor = "current_thread")]
 pub async fn serve(config: &Config) -> Result<()> {
     let (tx, rx) = mpsc::channel(32);
-    let fbink = Arc::new(FbInk::new(FbInkConfig {
-        is_centered: true,
-        is_halfway: true,
-        is_padded: true,
-        font: Font::Fatty,
-        to_syslog: true,
-        ..Default::default()
-    }).context("Failed to initialize FBInk")?);
+    let fbink = FbInkWrapper::new(config);
     init(config, fbink.clone())?;
     let mut manager = ActionManager::from_path(
         config.action_file(),
         config.recordings_file(),
         fbink.clone(),
         rx,
-    ).context("Failed to start ActionManager")?;
+    )
+    .context("Failed to start ActionManager")?;
     let state = AppState {
         tx,
         fbink: fbink.clone(),

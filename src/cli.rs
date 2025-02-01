@@ -17,7 +17,7 @@ use nix::sys::signal::{kill, Signal};
 use nix::unistd::Pid;
 use serde::{Deserialize, Serialize};
 use slug::slugify;
-use tracing::{error, info, warn, trace};
+use tracing::{error, info, trace, warn};
 
 #[derive(Parser, Debug, Deserialize, Serialize)]
 #[command(version, about, long_about = None, arg_required_else_help = true)]

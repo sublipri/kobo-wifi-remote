@@ -2,6 +2,7 @@ pub mod actions;
 pub mod cli;
 pub mod config;
 pub mod errors;
+pub mod fbink;
 pub mod frontend;
 pub mod init;
 pub mod kobo_config;

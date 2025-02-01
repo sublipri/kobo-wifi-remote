@@ -4,7 +4,7 @@ Kobo Wi-Fi Remote is a remote control/page turner for Kobo e-readers. It install
 
 ## Supported Devices
 
-It should work on any Kobo e-reader released between 2011 and July 2024, but is only actively tested on a Glo and Sage with recent firmware.
+It aims to support any Kobo e-reader released between 2011 and July 2024, but is only actively tested on a Glo and Sage with recent firmware.
 
 If the latest version doesn't work on your device, try [version 0.1.1](https://github.com/sublipri/kobo-wifi-remote/releases/tag/v0.1.1). That's more generic in how it functions, but is slower and has fewer features.
 
@@ -58,6 +58,8 @@ You can download a log file via the web interface by following the steps on the 
 ## Configuration
 
 There are two config files that live in `.adds/wifiremote/` by default. The `user-config.toml` can be edited via the `Edit Config` button on the home screen. This method is recommended as it will validate any changes. You can modify the colors of the buttons, change settings for some features, and disable or re-order the buttons on the home screen. Enabling the `prompt_fullscreen` option helps to prevent accidentally navigating away from the page, but it probably won't work on iPhones due to browser limitations. Most settings in `app-config.toml` should not be changed by users, and must be edited manually with a text editor. Of note are `allow_remote_restart` (default: `true`) and `allow_remote_exit` (default: `false`) for enabling the `/exit` and `/restart` endpoints.
+
+Nearly all config changes should take effect immediately. If they don't, try forcing a refresh or rebooting the e-reader. If you ever change the `enable_fbink` setting (not recommended), you must reboot and also re-record any existing actions.
 
 ## Arbitrary Input AKA Trackpad Mode
 

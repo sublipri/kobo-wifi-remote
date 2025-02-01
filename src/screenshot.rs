@@ -16,10 +16,11 @@ pub fn routes() -> Router<AppState> {
 }
 
 async fn screenshot(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
-    state.fbink.reinit()?;
-    let bytes = state.fbink.screenshot(ImageFormat::Png)?;
+    let fbink = state.fbink.try_inner()?;
+    fbink.reinit()?;
+    let bytes = fbink.screenshot(ImageFormat::Png)?;
     let timestamp = Local::now().format("%Y%m%d-%H%M-%S");
-    let filename = format!("{}-{timestamp}.png", slugify(state.fbink.state().device_id));
+    let filename = format!("{}-{timestamp}.png", slugify(fbink.state().device_id));
     let mut headers = HeaderMap::new();
     headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("image/png"));
     let value = HeaderValue::from_str(&format!("inline; filename=\"{}\"", filename))?;

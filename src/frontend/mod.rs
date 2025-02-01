@@ -138,11 +138,18 @@ async fn voice_activation(State(state): State<AppState>) -> Result<impl IntoResp
 }
 
 async fn setup(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
-    let fb_state = state.fbink.state();
+    let (is_sunxi, device_name) = if let Ok(fbink) = state.fbink.try_inner() {
+        let fb_state = fbink.state();
+        (fb_state.is_sunxi, fb_state.device_name)
+    } else {
+        (false, "Unknown Device".into())
+    };
     Ok(templates::Setup {
         opts: state.config().user.setup.clone(),
-        is_sunxi: fb_state.is_sunxi,
-        device_name: fb_state.device_name,
+        is_sunxi,
+        device_name,
+        fbink_is_err: state.fbink.is_err(),
+        fbink_is_disabled: state.fbink.is_disabled(),
     })
 }
 

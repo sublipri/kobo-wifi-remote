@@ -22,6 +22,8 @@ pub struct Setup {
     pub opts: SetupOptions,
     pub is_sunxi: bool,
     pub device_name: String,
+    pub fbink_is_err: bool,
+    pub fbink_is_disabled: bool,
 }
 
 #[derive(Template)]

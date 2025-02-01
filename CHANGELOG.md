@@ -5,6 +5,10 @@
 ### Added
 - A way to configure how rotation is detected on sunxi devices (Sage & Elipsa).
 
+### Changed
+- Devices without FBInk support might now work with reduced functionality
+- The server will log some non-fatal errors during startup instead of exiting
+
 ### Fixed
 - Landscape rotation detection on the Glo (existing landscape recordings on the Glo will need re-doing)
 - The user config being overwritten if it has fields missing when edited from the web interface

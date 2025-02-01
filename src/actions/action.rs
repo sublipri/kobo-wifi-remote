@@ -1,18 +1,19 @@
 use super::input::{get_input_devices, is_touch_device, optimize_events, read_input};
+use crate::fbink::FbInkWrapper;
 use crate::util::sleep;
 
 use std::collections::BTreeMap;
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::PathBuf;
-use std::sync::Arc;
 
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Duration, Utc};
 use evdev_rs::util::event_code_to_int;
 use evdev_rs::{InputEvent, TimeVal};
-use fbink_rs::{CanonicalRotation, FbInk};
+use fbink_rs::CanonicalRotation;
 use nix::libc;
+use num_enum::FromPrimitive;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DurationMicroSeconds, DurationMilliSeconds};
 use slug::slugify;
@@ -21,7 +22,7 @@ use tracing::{debug, warn};
 
 pub struct ActionManager {
     pub actions: ActionsFile,
-    fbink: Arc<FbInk>,
+    fbink: FbInkWrapper,
     pub recordings: RecordingsFile,
     rx: mpsc::Receiver<ActionMsg>,
     play_wait_until: DateTime<Utc>,
@@ -31,7 +32,7 @@ impl ActionManager {
     pub fn from_path(
         actions_path: PathBuf,
         recordings_path: PathBuf,
-        fbink: Arc<FbInk>,
+        fbink: FbInkWrapper,
         rx: mpsc::Receiver<ActionMsg>,
     ) -> Result<Self> {
         Ok(Self {
@@ -41,6 +42,29 @@ impl ActionManager {
             rx,
             play_wait_until: Utc::now(),
         })
+    }
+
+    fn current_rotation(&self) -> Result<CanonicalRotation> {
+        // Use FBInk for rotation detection if possible. Otherwise read it from the framebuffer
+        // ourself.
+        if let Ok(fbink) = self.fbink.try_inner() {
+            Ok(fbink
+                .current_rotation()
+                .context("FBInk failed to read device rotation")?)
+        } else if let Ok(framebuffer) = framebuffer::Framebuffer::new("/dev/fb0") {
+            // This will be the native rotation rather than the canonical, and won't actually
+            // change when some models rotate. We'll just pretend it's the canonical rotation,
+            // so at the very least the remote functions in a single rotation on devices that
+            // can't detect it properly.
+            let rota: u8 = framebuffer
+                .var_screen_info
+                .rotate
+                .try_into()
+                .unwrap_or_default();
+            Ok(CanonicalRotation::from_primitive(rota))
+        } else {
+            Ok(CanonicalRotation::Upright)
+        }
     }
 
     fn record(&mut self, opts: RecordActionOptions) -> Result<RecordActionResponse> {
@@ -61,9 +85,9 @@ impl ActionManager {
         }
 
         let action = self.actions.data.get(&path_segment).unwrap();
-        let rotation = self.fbink.current_rotation()?;
+        let rotation = self.current_rotation()?;
         let recording = ActionRecording::record(&opts, rotation)?;
-        if rotation != self.fbink.current_rotation()? {
+        if rotation != self.current_rotation()? {
             return Err(anyhow!("The rotation changed during recording."));
         }
         let response = RecordActionResponse {
@@ -86,7 +110,7 @@ impl ActionManager {
         if Utc::now() < self.play_wait_until {
             sleep(self.play_wait_until - Utc::now());
         }
-        let rotation = self.fbink.current_rotation()?;
+        let rotation = self.current_rotation()?;
         let recording = self.recordings.get(path_segment, rotation)?;
         let opts = self.actions.data.get(path_segment).unwrap();
         recording.play(path_segment)?;

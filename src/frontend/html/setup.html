@@ -59,11 +59,24 @@ SPDX-License-Identifier: GPL-3.0-only
       recording, just re-record the input and it will overwrite the previous
       one.
     </p>
-    {% if is_sunxi %}
+    {% if fbink_is_err %}
+    <p>
+      <strong>Warning:</strong> FBInk failed to load. A more limited method will
+      be used to attempt rotation detection. If FBInk starts working in the
+      future, the reported rotation may differ, and you'll need to re-record all
+      inputs.
+    </p>
+    {% else if fbink_is_disabled %}
+    <p>
+      <strong>Warning:</strong> FBInk is disabled. A more limited method will be
+      used to attempt rotation detection. If you enable FBInk in the future, the
+      reported rotation may differ, and you'll need to re-record all inputs.
+    </p>
+    {% else if is_sunxi %}
     <p>
       Note: rotation detection on the {{device_name}} is not always accurate due
       to device limitations. If you don't need all rotations, you can mitigate
-      this by changing "sunxi_detection" in the config to either "Portrait",
+      this by changing "sunxi_force_rota" in the config to either "Portrait",
       "Landscape", "Upright", "Clockwise", "UpsideDown" or "CounterClockwise".
     </p>
     <p>
