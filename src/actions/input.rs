@@ -372,8 +372,8 @@ mod tests {
         assert_eq!(expected, events);
     }
 
-    fn input_event(tv_sec: i64, tv_usec: i64, event_code: EventCode, value: i32) -> InputEvent {
-        let time = TimeVal { tv_sec, tv_usec };
+    fn input_event(tv_sec: i32, tv_usec: i32, event_code: EventCode, value: i32) -> InputEvent {
+        let time = TimeVal { tv_sec: tv_sec.into(), tv_usec: tv_usec.into() };
         InputEvent {
             time,
             event_code,
