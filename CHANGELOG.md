@@ -1,6 +1,7 @@
 # Changelog
 
-## Unreleased
+## 0.3.2 - 2025-02-01
+This release contains some relatively minor fixes and improvements. Kobo Glo users will need to redo any landscape recordings after upgrading.
 
 ### Added
 - A way to configure how rotation is detected on sunxi devices (Sage & Elipsa).
@@ -10,7 +11,7 @@
 - The server will log some non-fatal errors during startup instead of exiting
 
 ### Fixed
-- Landscape rotation detection on the Glo (existing landscape recordings on the Glo will need re-doing)
+- Landscape rotation detection on the Glo
 - The user config being overwritten if it has fields missing when edited from the web interface
 
 ## 0.3.1 - 2024-07-18

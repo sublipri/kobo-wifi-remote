@@ -1,4 +1,4 @@
-# Kobo Wi-Fi Remote 0.3.1
+# Kobo Wi-Fi Remote 0.3.2
 
 Kobo Wi-Fi Remote is a remote control/page turner for Kobo e-readers. It installs a server on your device that can record and replay touchscreen inputs via a web interface. It is **not** safe to use on public Wi-Fi networks.
 
@@ -32,7 +32,7 @@ https://github.com/user-attachments/assets/8ea282af-c377-4ee3-9978-bcb42a530bb3
 
 ## Installation
 
-1. Download the [latest release](https://github.com/sublipri/kobo-wifi-remote/releases/download/v0.3.1/KoboWiFiRemote-0.3.1.zip) and extract the `.zip` file.
+1. Download the [latest release](https://github.com/sublipri/kobo-wifi-remote/releases/download/v0.3.2/KoboWiFiRemote-0.3.2.zip) and extract the `.zip` file.
 1. Connect your e-reader to your computer with a USB cable and browse its storage.
 1. Set your computer to show hidden files.
 1. Copy the `KoboRoot.tgz` file into the hidden `.kobo` directory on your e-reader.
